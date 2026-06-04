@@ -44,12 +44,20 @@
 }
 
 .obsync-row {
-  @apply flex items-center justify-between gap-5 px-5 py-4;
-  border-bottom: 1px solid var(--background-modifier-border);
+  @apply relative flex items-center justify-between gap-5 px-5 py-4;
 }
 
-.obsync-row:last-child {
-  @apply border-b-0;
+.obsync-row::after {
+  content: "";
+  position: absolute;
+  inset-inline: 1.25rem;
+  bottom: 0;
+  height: 1px;
+  background: var(--background-modifier-border);
+}
+
+.obsync-row:last-child::after {
+  display: none;
 }
 
 .obsync-row-copy {
@@ -71,6 +79,23 @@
     padding-inline-start: 0 !important;
     text-indent: 0;
   }
+}
+
+.obsync-row-title {
+  @apply flex items-center justify-between gap-3;
+}
+
+.obsync-link-button {
+  @apply shrink-0 cursor-pointer rounded px-2 py-1 text-xs font-semibold leading-4 transition;
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+  color: var(--text-muted);
+}
+
+.obsync-link-button:hover {
+  background: var(--background-modifier-hover);
+  color: var(--text-normal);
 }
 
 .obsync-control {
@@ -157,7 +182,6 @@
   color: var(--text-normal);
 }
 
-.obsync-readonly button,
 .obsync-primary {
   @apply shrink-0 cursor-pointer rounded-md border-0 px-3 py-2 text-sm font-semibold leading-5 transition;
   background: var(--interactive-accent);
@@ -171,13 +195,11 @@
   color: var(--text-normal);
 }
 
-.obsync-readonly button:hover,
 .obsync-primary:hover,
 .obsync-secondary:hover {
   @apply opacity-90;
 }
 
-.obsync-readonly button:active,
 .obsync-primary:active,
 .obsync-secondary:active {
   @apply translate-y-px;
@@ -218,28 +240,25 @@
   @apply mb-3;
 }
 
-.obsync-row-block pre {
-  @apply mb-3 max-h-60 overflow-auto rounded-md p-3 text-xs leading-5;
+.obsync-config-display {
+  @apply min-h-48 rounded-md p-3 font-mono text-xs leading-5;
   background: var(--background-primary);
+  border: 1px solid var(--background-modifier-border);
   color: var(--text-normal);
   overflow-wrap: anywhere;
   white-space: pre-wrap;
 }
 
-.obsync-row-block textarea {
-  @apply mt-3 h-28 w-full resize-y rounded-md p-3 text-xs leading-5 outline-none transition;
-  background: var(--background-primary);
-  border: 1px solid var(--background-modifier-border);
-  color: var(--text-normal);
+.obsync-action-row {
+  @apply mt-3 flex gap-2;
 }
 
-.obsync-row-block textarea:focus {
-  border-color: var(--interactive-accent);
-  box-shadow: 0 0 0 2px var(--background-modifier-border-focus);
+.obsync-action-row button {
+  @apply flex-1;
 }
 
-.obsync-row-block textarea::placeholder {
-  color: var(--text-faint);
+.obsync-action-row .obsync-secondary {
+  @apply mt-0;
 }
 
 @container (max-width: 640px) {
@@ -255,8 +274,16 @@
     @apply block px-4 py-4;
   }
 
+  .obsync-row::after {
+    inset-inline: 1rem;
+  }
+
   .obsync-row-copy {
     @apply mb-2;
+  }
+
+  .obsync-row-title {
+    @apply items-start;
   }
 
   .obsync-control,
@@ -273,7 +300,6 @@
     @apply text-left;
   }
 
-  .obsync-readonly button,
   .obsync-primary,
   .obsync-secondary {
     @apply w-full;

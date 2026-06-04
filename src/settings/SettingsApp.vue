@@ -25,14 +25,13 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   update: [update: Partial<ObsyncSettings>];
-  copyVaultId: [];
+  copyDeviceId: [];
   copyConnectionConfig: [];
-  importConnectionConfig: [configText: string];
+  pasteConnectionConfig: [];
 }>();
 
 const showSecretAccessKey = ref(false);
 const secretAccessKeyButton = ref<HTMLButtonElement | null>(null);
-const importConfigText = ref("");
 
 watchEffect(() => {
   const button = secretAccessKeyButton.value;
@@ -186,7 +185,6 @@ watchEffect(() => {
         </div>
         <div class="obsync-readonly">
           <code>{{ props.settings.vaultId }}</code>
-          <button type="button" @click="emit('copyVaultId')">复制</button>
         </div>
       </div>
     </section>
@@ -194,7 +192,12 @@ watchEffect(() => {
     <section class="obsync-card">
       <div class="obsync-row">
         <div class="obsync-row-copy">
-          <h3>设备名称</h3>
+          <div class="obsync-row-title">
+            <h3>设备名称</h3>
+            <button type="button" class="obsync-link-button" @click="emit('copyDeviceId')">
+              复制设备 ID
+            </button>
+          </div>
           <p>用于冲突文件名和界面展示。</p>
         </div>
         <div class="obsync-control">
@@ -202,16 +205,6 @@ watchEffect(() => {
           :value="props.settings.deviceName"
           @input="emit('update', { deviceName: ($event.target as HTMLInputElement).value.trim() || 'This device' })"
         />
-        </div>
-      </div>
-
-      <div class="obsync-row">
-        <div class="obsync-row-copy">
-          <h3>设备 ID</h3>
-          <p>首次启用插件时随机生成。</p>
-        </div>
-        <div class="obsync-readonly">
-          <code>{{ props.settings.deviceId }}</code>
         </div>
       </div>
 
@@ -238,24 +231,17 @@ watchEffect(() => {
           <p>复制到另一台设备导入。这里不包含 Access Key 和 Secret。</p>
         </div>
 
-        <pre>{{ JSON.stringify(props.connectionConfig, null, 2) }}</pre>
+        <pre class="obsync-config-display">{{ JSON.stringify(props.connectionConfig, null, 2) }}</pre>
 
-        <button type="button" class="obsync-primary" @click="emit('copyConnectionConfig')">
-          复制连接配置
-        </button>
+        <div class="obsync-action-row">
+          <button type="button" class="obsync-primary" @click="emit('copyConnectionConfig')">
+            复制连接配置
+          </button>
 
-        <textarea
-          v-model="importConfigText"
-          placeholder="粘贴另一台设备复制的连接配置 JSON"
-        ></textarea>
-
-        <button
-          type="button"
-          class="obsync-secondary"
-          @click="emit('importConnectionConfig', importConfigText)"
-        >
-          导入连接配置
-        </button>
+          <button type="button" class="obsync-secondary" @click="emit('pasteConnectionConfig')">
+            粘贴并导入
+          </button>
+        </div>
       </div>
     </section>
   </main>

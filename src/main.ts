@@ -1,10 +1,12 @@
-import { App, Notice, Plugin, PluginSettingTab, requestUrl, TFile, TFolder } from "obsidian";
+import { App, Notice, Platform, Plugin, PluginSettingTab, requestUrl, TFile, TFolder } from "obsidian";
 import { createApp, reactive, type App as VueApp } from "vue";
 import { createRandomId, createVaultId, normalizeKey } from "./core/ids";
 import SettingsApp from "./settings/SettingsApp.vue";
 import "./styles.scss";
 import { syncOnce, type LocalSyncState, type VaultIO } from "./sync/engine";
 import { S3ObjectStore } from "./store/s3";
+
+declare const require: ((id: string) => unknown) | undefined;
 
 interface ObsyncSettings {
   endpoint: string;
@@ -160,12 +162,12 @@ export default class ObsyncPlugin extends Plugin {
       this.settings.vaultKey = normalizeKey(this.app.vault.getName());
     }
 
-    if (!this.settings.deviceName) {
-      this.settings.deviceName = "This device";
-    }
-
     if (!this.settings.deviceId) {
       this.settings.deviceId = createRandomId("dev");
+    }
+
+    if (!this.settings.deviceName || this.settings.deviceName === "This device") {
+      this.settings.deviceName = getCurrentDeviceName(this.settings.deviceId);
     }
 
     if (!this.settings.syncState) {
@@ -213,6 +215,38 @@ export default class ObsyncPlugin extends Plugin {
       vaultKey: config.vaultKey,
     });
   }
+}
+
+function getCurrentDeviceName(deviceId: string): string {
+  try {
+    if (typeof require !== "function") {
+      return getPlatformDeviceName(deviceId);
+    }
+
+    const os = require("node:os") as { hostname?: () => string };
+    return os.hostname?.().trim() || getPlatformDeviceName(deviceId);
+  } catch {
+    return getPlatformDeviceName(deviceId);
+  }
+}
+
+function getPlatformDeviceName(deviceId: string): string {
+  const suffix = getDeviceNameSuffix(deviceId);
+
+  if (Platform.isIosApp) {
+    return `${Platform.isTablet ? "iPad" : "iPhone"} ${suffix}`;
+  }
+
+  if (Platform.isAndroidApp) {
+    return `${Platform.isTablet ? "Android Tablet" : "Android Phone"} ${suffix}`;
+  }
+
+  return `Desktop ${suffix}`;
+}
+
+function getDeviceNameSuffix(deviceId: string): string {
+  const compactId = deviceId.replace(/^dev_/, "");
+  return compactId.slice(-4) || "0000";
 }
 
 function parseConnectionConfig(configText: string): ConnectionConfig {
@@ -374,16 +408,17 @@ class ObsyncSettingTab extends PluginSettingTab {
         await this.plugin.updateSettings(update);
         Object.assign(connectionConfig, this.plugin.getConnectionConfig());
       },
-      onCopyVaultId: async () => {
-        await navigator.clipboard.writeText(this.plugin.settings.vaultId);
-        new Notice("Vault ID 已复制。");
+      onCopyDeviceId: async () => {
+        await navigator.clipboard.writeText(this.plugin.settings.deviceId);
+        new Notice("设备 ID 已复制。");
       },
       onCopyConnectionConfig: async () => {
         await navigator.clipboard.writeText(JSON.stringify(this.plugin.getConnectionConfig(), null, 2));
         new Notice("连接配置已复制。");
       },
-      onImportConnectionConfig: async (configText: string) => {
+      onPasteConnectionConfig: async () => {
         try {
+          const configText = await navigator.clipboard.readText();
           await this.plugin.importConnectionConfig(configText);
           Object.assign(settings, this.plugin.settings);
           Object.assign(connectionConfig, this.plugin.getConnectionConfig());
