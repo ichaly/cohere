@@ -19,30 +19,23 @@
   @apply mb-4 flex items-start justify-between gap-3;
 }
 
-.obsync-eyebrow,
 .obsync-subtitle,
 .obsync-row-copy p {
   @apply m-0;
   color: var(--text-muted);
 }
 
-.obsync-eyebrow {
-  @apply text-xs font-semibold leading-5;
-}
-
 .obsync-title {
-  @apply m-0 mt-1 text-2xl font-bold leading-tight;
+  @apply m-0 p-0 text-2xl font-bold leading-tight;
   color: var(--text-normal);
+  margin-inline-start: 0 !important;
+  padding-inline-start: 0 !important;
+  text-align: left;
+  text-indent: 0;
 }
 
 .obsync-subtitle {
   @apply mt-1 text-sm leading-6;
-}
-
-.obsync-status {
-  @apply shrink-0 rounded-md px-2 py-1 text-xs leading-5;
-  border: 1px solid var(--background-modifier-border);
-  color: var(--text-muted);
 }
 
 .obsync-card {
@@ -60,15 +53,23 @@
 }
 
 .obsync-row-copy {
-  @apply min-w-0 flex-1;
+  @apply min-w-0 flex-1 p-0 text-left;
+  margin-inline-start: 0 !important;
+  padding-inline-start: 0 !important;
 
   h3 {
-    @apply m-0 text-base font-semibold leading-6;
+    @apply m-0 p-0 text-left text-base font-semibold leading-6;
     color: var(--text-normal);
+    margin-inline-start: 0 !important;
+    padding-inline-start: 0 !important;
+    text-indent: 0;
   }
 
   p {
-    @apply mt-0.5 text-sm leading-5;
+    @apply mt-0.5 p-0 text-left text-sm leading-5;
+    margin-inline-start: 0 !important;
+    padding-inline-start: 0 !important;
+    text-indent: 0;
   }
 }
 
@@ -96,6 +97,56 @@
   color: var(--text-faint);
 }
 
+.obsync-secret-field {
+  @apply flex h-9 min-w-0 items-center rounded-md;
+  background: var(--background-primary);
+  border: 1px solid var(--background-modifier-border);
+
+  &:focus-within {
+    border-color: var(--interactive-accent);
+    box-shadow: 0 0 0 2px var(--background-modifier-border-focus);
+  }
+
+  input {
+    @apply h-full flex-1 border-0 bg-transparent pr-2;
+    box-shadow: none;
+  }
+
+  input:focus {
+    border-color: transparent;
+    box-shadow: none;
+  }
+
+  .obsync-icon-button {
+    @apply mr-1 flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded transition;
+    appearance: none;
+    background: transparent !important;
+    border: 0 !important;
+    box-shadow: none !important;
+    color: var(--text-muted);
+    min-width: 32px;
+    padding: 0 !important;
+  }
+
+  .obsync-icon-button .svg-icon,
+  .obsync-icon-button svg {
+    width: 24px !important;
+    height: 24px !important;
+    stroke-width: 2;
+  }
+
+  .obsync-icon-button:hover {
+    background: var(--background-modifier-hover);
+    color: var(--text-normal);
+  }
+
+  .obsync-icon-button:focus,
+  .obsync-icon-button:focus-visible {
+    box-shadow: none !important;
+    outline: none;
+  }
+}
+
 .obsync-readonly {
   @apply flex min-w-0 shrink-0 items-center justify-end gap-3;
   width: min(380px, 58%);
@@ -113,13 +164,22 @@
   color: var(--text-on-accent);
 }
 
+.obsync-secondary {
+  @apply mt-2 shrink-0 cursor-pointer rounded-md px-3 py-2 text-sm font-semibold leading-5 transition;
+  background: var(--background-primary);
+  border: 1px solid var(--background-modifier-border);
+  color: var(--text-normal);
+}
+
 .obsync-readonly button:hover,
-.obsync-primary:hover {
+.obsync-primary:hover,
+.obsync-secondary:hover {
   @apply opacity-90;
 }
 
 .obsync-readonly button:active,
-.obsync-primary:active {
+.obsync-primary:active,
+.obsync-secondary:active {
   @apply translate-y-px;
 }
 
@@ -166,13 +226,25 @@
   white-space: pre-wrap;
 }
 
+.obsync-row-block textarea {
+  @apply mt-3 h-28 w-full resize-y rounded-md p-3 text-xs leading-5 outline-none transition;
+  background: var(--background-primary);
+  border: 1px solid var(--background-modifier-border);
+  color: var(--text-normal);
+}
+
+.obsync-row-block textarea:focus {
+  border-color: var(--interactive-accent);
+  box-shadow: 0 0 0 2px var(--background-modifier-border-focus);
+}
+
+.obsync-row-block textarea::placeholder {
+  color: var(--text-faint);
+}
+
 @container (max-width: 640px) {
   .obsync-header {
     @apply block;
-  }
-
-  .obsync-status {
-    @apply mt-3 inline-block;
   }
 
   .obsync-card {
@@ -202,8 +274,13 @@
   }
 
   .obsync-readonly button,
-  .obsync-primary {
+  .obsync-primary,
+  .obsync-secondary {
     @apply w-full;
+  }
+
+  .obsync-secondary {
+    @apply mt-2;
   }
 
   .obsync-switch {
@@ -216,4 +293,3 @@
     @apply text-xl;
   }
 }
-

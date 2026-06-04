@@ -1,5 +1,5 @@
 import { App, Notice, Plugin, PluginSettingTab, requestUrl, TFile, TFolder } from "obsidian";
-import { createApp, type App as VueApp } from "vue";
+import { createApp, reactive, type App as VueApp } from "vue";
 import { createRandomId, createVaultId, normalizeKey } from "./core/ids";
 import SettingsApp from "./settings/SettingsApp.vue";
 import "./styles.scss";
@@ -21,6 +21,17 @@ interface ObsyncSettings {
   syncIntervalMinutes: number;
   autoSync: boolean;
   syncState: LocalSyncState;
+}
+
+interface ConnectionConfig {
+  schemaVersion: 1;
+  endpoint: string;
+  bucket: string;
+  region: string;
+  rootPrefix: string;
+  accountKey: string;
+  vaultKey: string;
+  vaultId?: string;
 }
 
 const DEFAULT_SETTINGS: ObsyncSettings = {
@@ -50,15 +61,23 @@ export default class ObsyncPlugin extends Plugin {
 
     this.addCommand({
       id: "manual-sync",
-      name: "Sync now",
+      name: "立即同步",
       callback: async () => {
         await this.syncNow();
       },
     });
 
+    const syncRibbonIcon = this.addRibbonIcon("refresh-cw", "Obsync 立即同步", async () => {
+      await this.syncNow();
+    });
+    syncRibbonIcon.classList.add("obsync-ribbon-sync");
+    this.app.workspace.onLayoutReady(() => {
+      this.moveRibbonIconToBottom(syncRibbonIcon);
+    });
+
     this.addCommand({
       id: "copy-connection-config",
-      name: "Copy connection config",
+      name: "复制连接配置",
       callback: async () => {
         await navigator.clipboard.writeText(JSON.stringify(this.getConnectionConfig(), null, 2));
         new Notice("Obsync 连接配置已复制。");
@@ -74,7 +93,7 @@ export default class ObsyncPlugin extends Plugin {
       return;
     }
 
-    new Notice("Obsync 正在同步...");
+    const syncingNotice = new Notice("Obsync 正在同步...", 0);
 
     try {
       const store = new S3ObjectStore({
@@ -88,10 +107,11 @@ export default class ObsyncPlugin extends Plugin {
         deviceId: this.settings.deviceId,
         now: () => Date.now(),
         request: async (request) => {
+          const { host: _host, ...headers } = request.headers;
           const response = await requestUrl({
             url: request.url,
             method: request.method,
-            headers: request.headers,
+            headers,
             body: request.body,
             throw: false,
           });
@@ -112,6 +132,7 @@ export default class ObsyncPlugin extends Plugin {
       });
 
       await this.saveSettings();
+      syncingNotice.hide();
 
       if (result.locked) {
         new Notice("另一台设备正在同步，本次已跳过。");
@@ -120,9 +141,15 @@ export default class ObsyncPlugin extends Plugin {
 
       new Notice(`Obsync 同步完成：上传 ${result.uploaded}，下载 ${result.downloaded}，冲突 ${result.conflicts}。`);
     } catch (error) {
+      syncingNotice.hide();
       const message = error instanceof Error ? error.message : String(error);
       new Notice(`Obsync 同步失败：${message}`);
     }
+  }
+
+  private moveRibbonIconToBottom(iconEl: HTMLElement): void {
+    const leftRibbonActions = document.querySelector(".workspace-ribbon.mod-left .side-dock-actions");
+    (leftRibbonActions ?? iconEl.parentElement)?.append(iconEl);
   }
 
   async loadSettings(): Promise<void> {
@@ -154,7 +181,7 @@ export default class ObsyncPlugin extends Plugin {
   }
 
   async updateSettings(update: Partial<ObsyncSettings>): Promise<void> {
-    this.settings = Object.assign({}, this.settings, update);
+    Object.assign(this.settings, update);
     this.settings.accountKey = normalizeKey(this.settings.accountKey || "default");
     this.settings.vaultKey = normalizeKey(this.settings.vaultKey || this.app.vault.getName());
     this.settings.vaultId = await createVaultId(this.settings.accountKey, this.settings.vaultKey);
@@ -173,6 +200,78 @@ export default class ObsyncPlugin extends Plugin {
       vaultId: this.settings.vaultId,
     };
   }
+
+  async importConnectionConfig(configText: string): Promise<void> {
+    const config = parseConnectionConfig(configText);
+
+    await this.updateSettings({
+      endpoint: config.endpoint,
+      bucket: config.bucket,
+      region: config.region,
+      rootPrefix: config.rootPrefix,
+      accountKey: config.accountKey,
+      vaultKey: config.vaultKey,
+    });
+  }
+}
+
+function parseConnectionConfig(configText: string): ConnectionConfig {
+  let parsed: unknown;
+
+  try {
+    parsed = JSON.parse(configText);
+  } catch {
+    throw new Error("连接配置不是有效 JSON。");
+  }
+
+  if (!isRecord(parsed) || parsed.schemaVersion !== 1) {
+    throw new Error("连接配置版本不支持。");
+  }
+
+  const config = {
+    schemaVersion: 1 as const,
+    endpoint: readRequiredString(parsed, "endpoint"),
+    bucket: readRequiredString(parsed, "bucket"),
+    region: readOptionalString(parsed, "region", "auto"),
+    rootPrefix: readOptionalString(parsed, "rootPrefix", "obsync/v1"),
+    accountKey: readOptionalString(parsed, "accountKey", "default"),
+    vaultKey: readRequiredString(parsed, "vaultKey"),
+    vaultId: readOptionalString(parsed, "vaultId", ""),
+  };
+
+  if (config.vaultId) {
+    void config.vaultId;
+  }
+
+  return config;
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function readRequiredString(record: Record<string, unknown>, key: string): string {
+  const value = record[key];
+
+  if (typeof value !== "string" || value.trim() === "") {
+    throw new Error(`连接配置缺少 ${key}。`);
+  }
+
+  return value.trim();
+}
+
+function readOptionalString(record: Record<string, unknown>, key: string, fallback: string): string {
+  const value = record[key];
+
+  if (value === undefined || value === null) {
+    return fallback;
+  }
+
+  if (typeof value !== "string") {
+    throw new Error(`连接配置字段 ${key} 格式不正确。`);
+  }
+
+  return value.trim() || fallback;
 }
 
 class ObsidianVaultIO implements VaultIO {
@@ -182,14 +281,15 @@ class ObsidianVaultIO implements VaultIO {
     this.app = app;
   }
 
-  async scan(): Promise<Array<{ path: string; bytes: Uint8Array }>> {
+  async scan(): Promise<Array<{ path: string; mtime: number; size: number }>> {
     const files = this.app.vault.getFiles();
-    const result: Array<{ path: string; bytes: Uint8Array }> = [];
+    const result: Array<{ path: string; mtime: number; size: number }> = [];
 
     for (const file of files) {
       result.push({
         path: file.path,
-        bytes: new Uint8Array(await this.app.vault.readBinary(file)),
+        mtime: file.stat.mtime,
+        size: file.stat.size,
       });
     }
 
@@ -263,12 +363,16 @@ class ObsyncSettingTab extends PluginSettingTab {
     containerEl.empty();
 
     const mountEl = containerEl.createDiv({ cls: "obsync-settings-root" });
+    const settings = reactive(this.plugin.settings) as ObsyncSettings;
+    const connectionConfig = reactive(this.plugin.getConnectionConfig());
+    this.plugin.settings = settings;
+
     this.vueApp = createApp(SettingsApp, {
-      settings: this.plugin.settings,
-      connectionConfig: this.plugin.getConnectionConfig(),
+      settings,
+      connectionConfig,
       onUpdate: async (update: Partial<ObsyncSettings>) => {
         await this.plugin.updateSettings(update);
-        this.display();
+        Object.assign(connectionConfig, this.plugin.getConnectionConfig());
       },
       onCopyVaultId: async () => {
         await navigator.clipboard.writeText(this.plugin.settings.vaultId);
@@ -277,6 +381,17 @@ class ObsyncSettingTab extends PluginSettingTab {
       onCopyConnectionConfig: async () => {
         await navigator.clipboard.writeText(JSON.stringify(this.plugin.getConnectionConfig(), null, 2));
         new Notice("连接配置已复制。");
+      },
+      onImportConnectionConfig: async (configText: string) => {
+        try {
+          await this.plugin.importConnectionConfig(configText);
+          Object.assign(settings, this.plugin.settings);
+          Object.assign(connectionConfig, this.plugin.getConnectionConfig());
+          new Notice("连接配置已导入。请继续填写 Access Key ID 和 Secret Access Key。");
+        } catch (error) {
+          const message = error instanceof Error ? error.message : String(error);
+          new Notice(`导入连接配置失败：${message}`);
+        }
       },
     });
     this.vueApp.mount(mountEl);

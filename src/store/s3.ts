@@ -91,6 +91,11 @@ export class S3ObjectStore implements ObjectStore {
     assertOk(response.status, `write object ${key}`);
   }
 
+  async deleteObject(key: string): Promise<void> {
+    const response = await this.request("DELETE", this.resolveKey(key));
+    assertOk(response.status, `delete object ${key}`);
+  }
+
   private resolveKey(key: string): string {
     if (key === "manifest.json" || key.startsWith("locks/") || key.startsWith("meta/")) {
       return `${this.layout.vaultPrefix}/${key}`;

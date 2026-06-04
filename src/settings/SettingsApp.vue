@@ -1,4 +1,7 @@
 <script setup lang="ts">
+import { setIcon } from "obsidian";
+import { ref, watchEffect } from "vue";
+
 type ObsyncSettings = {
   endpoint: string;
   bucket: string;
@@ -24,18 +27,32 @@ const emit = defineEmits<{
   update: [update: Partial<ObsyncSettings>];
   copyVaultId: [];
   copyConnectionConfig: [];
+  importConnectionConfig: [configText: string];
 }>();
+
+const showSecretAccessKey = ref(false);
+const secretAccessKeyButton = ref<HTMLButtonElement | null>(null);
+const importConfigText = ref("");
+
+watchEffect(() => {
+  const button = secretAccessKeyButton.value;
+
+  if (!button) {
+    return;
+  }
+
+  button.empty();
+  setIcon(button, showSecretAccessKey.value ? "eye-off" : "eye");
+});
 </script>
 
 <template>
   <main class="obsync-panel">
     <header class="obsync-header">
       <div>
-        <p class="obsync-eyebrow">OSS / S3 同步</p>
         <h2 class="obsync-title">Obsync 设置</h2>
         <p class="obsync-subtitle">通过对象存储同步当前 Obsidian 仓库。</p>
       </div>
-      <div class="obsync-status">MVP</div>
     </header>
 
     <section class="obsync-card">
@@ -115,12 +132,22 @@ const emit = defineEmits<{
           <p>不会包含在连接配置中。</p>
         </div>
         <div class="obsync-control obsync-control-wide">
-          <input
-            type="password"
-            :value="props.settings.secretAccessKey"
-            autocomplete="off"
-            @input="emit('update', { secretAccessKey: ($event.target as HTMLInputElement).value })"
-          />
+          <div class="obsync-secret-field">
+            <input
+              :type="showSecretAccessKey ? 'text' : 'password'"
+              :value="props.settings.secretAccessKey"
+              autocomplete="off"
+              @input="emit('update', { secretAccessKey: ($event.target as HTMLInputElement).value })"
+            />
+            <button
+              ref="secretAccessKeyButton"
+              class="obsync-icon-button"
+              type="button"
+              :aria-label="showSecretAccessKey ? '隐藏密钥' : '显示密钥'"
+              :title="showSecretAccessKey ? '隐藏密钥' : '显示密钥'"
+              @click="showSecretAccessKey = !showSecretAccessKey"
+            ></button>
+          </div>
         </div>
       </div>
     </section>
@@ -215,6 +242,19 @@ const emit = defineEmits<{
 
         <button type="button" class="obsync-primary" @click="emit('copyConnectionConfig')">
           复制连接配置
+        </button>
+
+        <textarea
+          v-model="importConfigText"
+          placeholder="粘贴另一台设备复制的连接配置 JSON"
+        ></textarea>
+
+        <button
+          type="button"
+          class="obsync-secondary"
+          @click="emit('importConnectionConfig', importConfigText)"
+        >
+          导入连接配置
         </button>
       </div>
     </section>

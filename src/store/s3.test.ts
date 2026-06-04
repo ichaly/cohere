@@ -31,6 +31,23 @@ describe("S3ObjectStore", () => {
     expect(requests[0]?.headers.Authorization).toContain("AWS4-HMAC-SHA256");
     expect(requests[0]?.headers["x-amz-content-sha256"]).toMatch(/^[a-f0-9]{64}$/);
   });
+
+  test("deletes objects under the vault prefix", async () => {
+    const requests: HttpRequest[] = [];
+    const store = createStore(async (request) => {
+      requests.push(request);
+      return {
+        status: 204,
+        text: "",
+        arrayBuffer: new ArrayBuffer(0),
+      };
+    });
+
+    await store.deleteObject("files/notes/today.md");
+
+    expect(requests[0]?.method).toBe("DELETE");
+    expect(requests[0]?.url).toBe("https://s3.example.com/my-bucket/obsync/v1/vaults/vlt_TEST/files/notes/today.md");
+  });
 });
 
 function createStore(request: (request: HttpRequest) => Promise<{ status: number; text: string; arrayBuffer: ArrayBuffer }>) {
@@ -47,4 +64,3 @@ function createStore(request: (request: HttpRequest) => Promise<{ status: number
     request,
   });
 }
-

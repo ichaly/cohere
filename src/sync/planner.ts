@@ -9,6 +9,10 @@ interface PlanFileActionInput {
 }
 
 export function planFileAction(input: PlanFileActionInput): SyncAction {
+  if (input.localDeleted) {
+    return input.remoteDeleted ? "noop" : "mark-remote-deleted";
+  }
+
   const localChanged = input.localDeleted || input.localHash !== input.lastSyncedHash;
   const remoteChanged = input.remoteDeleted || input.remoteHash !== input.lastSyncedHash;
 
@@ -26,4 +30,3 @@ export function planFileAction(input: PlanFileActionInput): SyncAction {
 
   return "conflict";
 }
-
