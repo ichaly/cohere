@@ -11,7 +11,7 @@ npm install
 npm run build
 ```
 
-The build uses Vite, Vue, and Tailwind CSS. It writes the Obsidian plugin bundle to `main.js` and settings styles to `styles.css`.
+The build uses Vite, Vue, Tailwind CSS, and SCSS. It writes the Obsidian plugin bundle to `main.js` and settings styles to `styles.css`.
 
 ## Plugin ID
 

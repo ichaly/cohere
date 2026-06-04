@@ -1,7 +1,7 @@
 import { App, Notice, Plugin, PluginSettingTab } from "obsidian";
 import { createApp, type App as VueApp } from "vue";
 import SettingsApp from "./settings/SettingsApp.vue";
-import "./styles.css";
+import "./styles.scss";
 
 interface ObsyncSettings {
   endpoint: string;
