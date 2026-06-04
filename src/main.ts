@@ -1,4 +1,4 @@
-import { App, Notice, Platform, Plugin, PluginSettingTab, requestUrl, TFile, TFolder } from "obsidian";
+import { App, Notice, Platform, Plugin, PluginSettingTab, requestUrl, type TAbstractFile, TFile, TFolder } from "obsidian";
 import { createApp, reactive, type App as VueApp } from "vue";
 import { createRandomId, createVaultId, normalizeKey } from "./core/ids";
 import SettingsApp from "./settings/SettingsApp.vue";
@@ -55,8 +55,13 @@ const DEFAULT_SETTINGS: ObsyncSettings = {
   },
 };
 
+const AUTO_SYNC_DEBOUNCE_MS = 2_000;
+
 export default class ObsyncPlugin extends Plugin {
   settings: ObsyncSettings = DEFAULT_SETTINGS;
+  private autoSyncTimer: number | null = null;
+  private autoSyncRunning = false;
+  private autoSyncQueued = false;
 
   async onload(): Promise<void> {
     await this.loadSettings();
@@ -87,6 +92,7 @@ export default class ObsyncPlugin extends Plugin {
     });
 
     this.addSettingTab(new ObsyncSettingTab(this.app, this));
+    this.registerAutoSyncTriggers();
   }
 
   async syncNow(): Promise<void> {
@@ -152,6 +158,76 @@ export default class ObsyncPlugin extends Plugin {
   private moveRibbonIconToBottom(iconEl: HTMLElement): void {
     const leftRibbonActions = document.querySelector(".workspace-ribbon.mod-left .side-dock-actions");
     (leftRibbonActions ?? iconEl.parentElement)?.append(iconEl);
+  }
+
+  private registerAutoSyncTriggers(): void {
+    this.app.workspace.onLayoutReady(() => {
+      this.queueAutoSync(0);
+    });
+
+    this.registerDomEvent(window, "focus", () => {
+      this.queueAutoSync();
+    });
+
+    this.registerDomEvent(document, "visibilitychange", () => {
+      if (!document.hidden) {
+        this.queueAutoSync();
+      }
+    });
+
+    const queueFileSync = (file: TAbstractFile) => {
+      if (file instanceof TFile) {
+        this.queueAutoSync();
+      }
+    };
+
+    this.registerEvent(this.app.vault.on("create", queueFileSync));
+    this.registerEvent(this.app.vault.on("modify", queueFileSync));
+    this.registerEvent(this.app.vault.on("delete", queueFileSync));
+    this.registerEvent(this.app.vault.on("rename", queueFileSync));
+  }
+
+  private queueAutoSync(delayMs = AUTO_SYNC_DEBOUNCE_MS): void {
+    if (!this.settings.autoSync) {
+      return;
+    }
+
+    if (this.autoSyncTimer !== null) {
+      window.clearTimeout(this.autoSyncTimer);
+    }
+
+    this.autoSyncTimer = window.setTimeout(() => {
+      this.autoSyncTimer = null;
+      void this.runAutoSync();
+    }, delayMs);
+  }
+
+  private async runAutoSync(): Promise<void> {
+    if (!this.settings.autoSync || !this.hasConnectionSettings()) {
+      return;
+    }
+
+    if (this.autoSyncRunning) {
+      this.autoSyncQueued = true;
+      return;
+    }
+
+    this.autoSyncRunning = true;
+
+    try {
+      await this.syncNow();
+    } finally {
+      this.autoSyncRunning = false;
+
+      if (this.autoSyncQueued) {
+        this.autoSyncQueued = false;
+        this.queueAutoSync();
+      }
+    }
+  }
+
+  private hasConnectionSettings(): boolean {
+    return Boolean(this.settings.endpoint && this.settings.bucket && this.settings.accessKeyId && this.settings.secretAccessKey);
   }
 
   async loadSettings(): Promise<void> {
