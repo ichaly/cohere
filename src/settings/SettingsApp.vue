@@ -223,7 +223,7 @@ watchEffect(() => {
         </div>
       </div>
 
-      <div class="obsync-row">
+      <div class="obsync-row obsync-toggle-row">
         <div class="obsync-row-copy">
           <h3>自动同步</h3>
           <p>启动、恢复前台和文件变化时自动同步。</p>

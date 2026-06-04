@@ -7,7 +7,7 @@ describe("sync engine", () => {
     const store = new FakeObjectStore();
     const state: LocalSyncState = { files: {} };
 
-    const result = await syncOnce({ vault, store, state, deviceName: "Mac", deviceId: "dev_mac", now: () => 1000 });
+    const result = await sync(vault, store, state, 1000);
     const hash = await hashText("hello");
 
     expect(result.uploaded).toBe(1);
@@ -21,9 +21,9 @@ describe("sync engine", () => {
     const store = new FakeObjectStore();
     const state: LocalSyncState = { files: {} };
 
-    await syncOnce({ vault, store, state, deviceName: "Mac", deviceId: "dev_mac", now: () => 1000 });
+    await sync(vault, store, state, 1000);
     vault.readCount = 0;
-    const result = await syncOnce({ vault, store, state, deviceName: "Mac", deviceId: "dev_mac", now: () => 2000 });
+    const result = await sync(vault, store, state, 2000);
 
     expect(result.uploaded).toBe(0);
     expect(result.downloaded).toBe(0);
@@ -35,11 +35,11 @@ describe("sync engine", () => {
     const store = new FakeObjectStore();
     const state: LocalSyncState = { files: {} };
 
-    await syncOnce({ vault, store, state, deviceName: "Mac", deviceId: "dev_mac", now: () => 1000 });
+    await sync(vault, store, state, 1000);
     store.acquireLockCount = 0;
     store.writeManifestCount = 0;
 
-    const result = await syncOnce({ vault, store, state, deviceName: "Mac", deviceId: "dev_mac", now: () => 2000 });
+    const result = await sync(vault, store, state, 2000);
 
     expect(result.locked).toBe(false);
     expect(store.acquireLockCount).toBe(0);
@@ -69,7 +69,7 @@ describe("sync engine", () => {
       version: "ver_remote",
     };
 
-    const result = await syncOnce({ vault, store, state, deviceName: "Mac", deviceId: "dev_mac", now: () => 2000 });
+    const result = await sync(vault, store, state, 2000);
 
     expect(result.downloaded).toBe(1);
     expect(await vault.readText("notes/today.md")).toBe("remote");
@@ -157,7 +157,7 @@ describe("sync engine", () => {
     const store = new FakeObjectStore();
     const state: LocalSyncState = { files: {} };
 
-    await syncOnce({ vault, store, state, deviceName: "Mac", deviceId: "dev_mac", now: () => 1000 });
+    await sync(vault, store, state, 1000);
 
     const hash = await hashText("hello");
     expect(await store.getText(`blobs/sha256/${hash.slice(0, 2)}/${hash.slice(2, 4)}/${hash}`)).toBe("hello");
@@ -176,7 +176,7 @@ describe("sync engine", () => {
       createdAt: 1000,
     };
 
-    await syncOnce({ vault, store, state, deviceName: "Mac", deviceId: "dev_mac", now: () => 2000 });
+    await sync(vault, store, state, 2000);
 
     expect(await store.getText(blobObjectKey(hash))).toBe("hello");
   });
@@ -186,10 +186,10 @@ describe("sync engine", () => {
     const store = new FakeObjectStore();
     const state: LocalSyncState = { files: {} };
 
-    await syncOnce({ vault, store, state, deviceName: "Mac", deviceId: "dev_mac", now: () => 1000 });
+    await sync(vault, store, state, 1000);
     const hash = await hashText("hello");
     await vault.delete("notes/today.md");
-    const result = await syncOnce({ vault, store, state, deviceName: "Mac", deviceId: "dev_mac", now: () => 2000 });
+    const result = await sync(vault, store, state, 2000);
 
     expect(result.deletedRemote).toBe(1);
     expect(result.conflicts).toBe(0);
@@ -222,7 +222,7 @@ describe("sync engine", () => {
       version: "ver_remote",
     };
 
-    const result = await syncOnce({ vault, store, state, deviceName: "Mac", deviceId: "dev_mac", now: () => 2000 });
+    const result = await sync(vault, store, state, 2000);
 
     expect(result.deletedRemote).toBe(1);
     expect(result.conflicts).toBe(0);
@@ -252,7 +252,7 @@ describe("sync engine", () => {
       deletedBy: "dev_other",
     };
 
-    const result = await syncOnce({ vault, store, state, deviceName: "Mac", deviceId: "dev_mac", now: () => 3000 });
+    const result = await sync(vault, store, state, 3000);
 
     expect(result.deletedLocal).toBe(1);
     await expect(vault.readText("notes/today.md")).resolves.toBe("");
@@ -281,7 +281,7 @@ describe("sync engine", () => {
       deletedBy: "dev_other",
     };
 
-    const result = await syncOnce({ vault, store, state, deviceName: "Mac", deviceId: "dev_mac", now: () => 3000 });
+    const result = await sync(vault, store, state, 3000);
 
     expect(result.conflicts).toBe(1);
     expect(result.deletedLocal).toBe(1);
@@ -303,7 +303,7 @@ describe("sync engine", () => {
       deletedBy: "dev_other",
     };
 
-    const result = await syncOnce({ vault, store, state, deviceName: "Mac", deviceId: "dev_mac", now: () => 3000 });
+    const result = await sync(vault, store, state, 3000);
 
     expect(result.conflicts).toBe(1);
     expect(result.uploaded).toBe(0);
@@ -334,7 +334,7 @@ describe("sync engine", () => {
     };
     store.writeManifestCount = 0;
 
-    await syncOnce({ vault, store, state, deviceName: "Mac", deviceId: "dev_mac", now: () => 1000 + 29 * 24 * 60 * 60 * 1000 });
+    await sync(vault, store, state, 1000 + 29 * 24 * 60 * 60 * 1000);
 
     expect(store.manifest.deleted["notes/today.md"]).toBeDefined();
     expect(state.files["notes/today.md"]?.deleted).toBe(true);
@@ -362,7 +362,7 @@ describe("sync engine", () => {
       deletedBy: "dev_other",
     };
 
-    await syncOnce({ vault, store, state, deviceName: "Mac", deviceId: "dev_mac", now: () => 1000 + 30 * 24 * 60 * 60 * 1000 });
+    await sync(vault, store, state, 1000 + 30 * 24 * 60 * 60 * 1000);
 
     expect(store.manifest.deleted["notes/today.md"]).toBeUndefined();
     expect(state.files["notes/today.md"]).toBeUndefined();
@@ -402,7 +402,7 @@ describe("sync engine", () => {
       deletedBy: "dev_mac",
     };
 
-    const result = await syncOnce({ vault, store, state, deviceName: "Mac", deviceId: "dev_mac", now: () => 1000 + 30 * 24 * 60 * 60 * 1000 });
+    const result = await sync(vault, store, state, 1000 + 30 * 24 * 60 * 60 * 1000);
 
     expect(result.uploaded).toBe(0);
     expect(store.manifest.deleted["notes/today.md"]).toBeUndefined();
@@ -416,13 +416,13 @@ describe("sync engine", () => {
     const store = new FakeObjectStore();
     const state: LocalSyncState = { files: {} };
 
-    await syncOnce({ vault, store, state, deviceName: "Mac", deviceId: "dev_mac", now: () => 1000 });
+    await sync(vault, store, state, 1000);
     const oldVersion = store.manifest.paths["notes/today.md"]?.version;
     await vault.delete("notes/today.md");
-    await syncOnce({ vault, store, state, deviceName: "Mac", deviceId: "dev_mac", now: () => 2000 });
+    await sync(vault, store, state, 2000);
     await vault.write("notes/today.md", new TextEncoder().encode("new"));
 
-    const result = await syncOnce({ vault, store, state, deviceName: "Mac", deviceId: "dev_mac", now: () => 3000 });
+    const result = await sync(vault, store, state, 3000);
 
     expect(result.uploaded).toBe(1);
     expect(store.manifest.paths["notes/today.md"]?.contentHash).toBe(await hashText("new"));
@@ -436,13 +436,13 @@ describe("sync engine", () => {
     const store = new FakeObjectStore();
     const state: LocalSyncState = { files: {} };
 
-    await syncOnce({ vault, store, state, deviceName: "Mac", deviceId: "dev_mac", now: () => 1000 });
+    await sync(vault, store, state, 1000);
     const oldVersion = store.manifest.paths["notes/today.md"]?.version;
     await vault.delete("notes/today.md");
-    await syncOnce({ vault, store, state, deviceName: "Mac", deviceId: "dev_mac", now: () => 2000 });
+    await sync(vault, store, state, 2000);
     await vault.write("notes/today.md", new TextEncoder().encode("same"));
 
-    await syncOnce({ vault, store, state, deviceName: "Mac", deviceId: "dev_mac", now: () => 3000 });
+    await sync(vault, store, state, 3000);
 
     expect(store.manifest.paths["notes/today.md"]?.contentHash).toBe(await hashText("same"));
     expect(store.manifest.paths["notes/today.md"]?.version).not.toBe(oldVersion);
@@ -480,7 +480,7 @@ describe("sync engine", () => {
       deletedBy: "dev_other",
     };
 
-    const result = await syncOnce({ vault, store, state, deviceName: "Mac", deviceId: "dev_mac", now: () => 4000 });
+    const result = await sync(vault, store, state, 4000);
 
     expect(result.conflicts).toBe(1);
     expect(await vault.readText("notes/today.md")).toBe("local-new");
@@ -512,8 +512,8 @@ describe("sync engine", () => {
       version: "ver_remote",
     };
 
-    const firstResult = await syncOnce({ vault, store, state, deviceName: "Mac", deviceId: "dev_mac", now: () => 3000 });
-    const secondResult = await syncOnce({ vault, store, state, deviceName: "Mac", deviceId: "dev_mac", now: () => 4000 });
+    const firstResult = await sync(vault, store, state, 3000);
+    const secondResult = await sync(vault, store, state, 4000);
 
     expect(firstResult.conflicts).toBe(1);
     expect(secondResult.conflicts).toBe(0);
@@ -603,7 +603,7 @@ describe("sync engine", () => {
       version: "ver_remote",
     };
 
-    const result = await syncOnce({ vault, store, state, deviceName: "Mac", deviceId: "dev_mac", now: () => 2000 });
+    const result = await sync(vault, store, state, 2000);
 
     expect(result.conflicts).toBe(1);
     expect(await vault.readText("notes/today.md")).toBe("local");
@@ -702,6 +702,10 @@ class FakeObjectStore implements ObjectStore {
   async getText(key: string): Promise<string> {
     return new TextDecoder().decode(await this.readObject(key));
   }
+}
+
+function sync(vault: VaultIO, store: ObjectStore, state: LocalSyncState, timestamp: number) {
+  return syncOnce({ vault, store, state, deviceName: "Mac", deviceId: "dev_mac", now: () => timestamp });
 }
 
 async function hashText(value: string): Promise<string> {

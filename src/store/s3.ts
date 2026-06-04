@@ -236,13 +236,7 @@ function formatAmzDate(timestamp: number): string {
 
 function createCanonicalQueryString(url: URL): string {
   return Array.from(url.searchParams.entries())
-    .sort(([leftKey, leftValue], [rightKey, rightValue]) => {
-      if (leftKey === rightKey) {
-        return leftValue.localeCompare(rightValue);
-      }
-
-      return leftKey.localeCompare(rightKey);
-    })
+    .sort(([leftKey, leftValue], [rightKey, rightValue]) => leftKey.localeCompare(rightKey) || leftValue.localeCompare(rightValue))
     .map(([key, value]) => `${encodeURIComponent(key)}=${encodeURIComponent(value)}`)
     .join("&");
 }
@@ -262,15 +256,7 @@ function safeParseJson(value: string): unknown {
 }
 
 function parseListBucketKeys(xml: string): string[] {
-  const keys: string[] = [];
-  const keyPattern = /<Key>([^<]*)<\/Key>/g;
-  let match: RegExpExecArray | null;
-
-  while ((match = keyPattern.exec(xml)) !== null) {
-    keys.push(decodeXml(match[1]));
-  }
-
-  return keys;
+  return readXmlTags(xml, "Key");
 }
 
 function readListContinuationToken(xml: string): string | undefined {
@@ -278,8 +264,19 @@ function readListContinuationToken(xml: string): string | undefined {
     return undefined;
   }
 
-  const match = xml.match(/<NextContinuationToken>([^<]*)<\/NextContinuationToken>/);
-  return match ? decodeXml(match[1]) : undefined;
+  return readXmlTags(xml, "NextContinuationToken")[0];
+}
+
+function readXmlTags(xml: string, tag: string): string[] {
+  const values: string[] = [];
+  const pattern = new RegExp(`<${tag}>([^<]*)<\\/${tag}>`, "g");
+  let match: RegExpExecArray | null;
+
+  while ((match = pattern.exec(xml)) !== null) {
+    values.push(decodeXml(match[1]));
+  }
+
+  return values;
 }
 
 function decodeXml(value: string): string {

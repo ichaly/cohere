@@ -62,9 +62,13 @@ export default class ObsyncPlugin extends Plugin {
   private autoSyncTimer: number | null = null;
   private autoSyncRunning = false;
   private autoSyncQueued = false;
+  private statusBarItem: HTMLElement | null = null;
 
   async onload(): Promise<void> {
     await this.loadSettings();
+    this.statusBarItem = this.addStatusBarItem();
+    this.statusBarItem.classList.add("obsync-status-bar-item");
+    this.clearOperationStatus();
 
     this.addCommand({
       id: "manual-sync",
@@ -104,14 +108,7 @@ export default class ObsyncPlugin extends Plugin {
   }
 
   async syncNow(): Promise<void> {
-    if (!this.settings.endpoint || !this.settings.bucket || !this.settings.accessKeyId || !this.settings.secretAccessKey) {
-      new Notice("请先填写端点、Bucket、Access Key ID 和 Secret Access Key。");
-      return;
-    }
-
-    const syncingNotice = new Notice("Obsync 正在同步...", 0);
-
-    try {
+    await this.runConfiguredOperation("同步中...", "Obsync 同步失败", async () => {
       const store = this.createObjectStore();
       const result = await syncOnce({
         vault: new ObsidianVaultIO(this.app),
@@ -123,7 +120,6 @@ export default class ObsyncPlugin extends Plugin {
       });
 
       await this.saveSettings();
-      syncingNotice.hide();
 
       if (result.locked) {
         new Notice("另一台设备正在同步，本次已跳过。");
@@ -131,11 +127,7 @@ export default class ObsyncPlugin extends Plugin {
       }
 
       new Notice(`Obsync 同步完成：上传 ${result.uploaded}，下载 ${result.downloaded}，冲突 ${result.conflicts}。`);
-    } catch (error) {
-      syncingNotice.hide();
-      const message = error instanceof Error ? error.message : String(error);
-      new Notice(`Obsync 同步失败：${message}`);
-    }
+    });
   }
 
   private moveRibbonIconToBottom(iconEl: HTMLElement): void {
@@ -214,17 +206,8 @@ export default class ObsyncPlugin extends Plugin {
   }
 
   async releaseDeletedContentNow(): Promise<void> {
-    if (!this.hasConnectionSettings()) {
-      new Notice("请先填写端点、Bucket、Access Key ID 和 Secret Access Key。");
-      return;
-    }
-
-    const notice = new Notice("Obsync 正在释放已删除内容...", 0);
-
-    try {
-      const store = this.createObjectStore();
-      const result = await releaseDeletedContent({ store, now: () => Date.now() });
-      notice.hide();
+    await this.runConfiguredOperation("清理中...", "释放已删除内容失败", async () => {
+      const result = await releaseDeletedContent({ store: this.createObjectStore(), now: () => Date.now() });
 
       if (result.locked) {
         new Notice("另一台设备正在同步，本次释放空间已跳过。");
@@ -234,11 +217,37 @@ export default class ObsyncPlugin extends Plugin {
       this.pruneLocalDeletedState();
       await this.saveSettings();
       new Notice(`Obsync 已释放：清理删除记录 ${result.deletedTombstones}，删除 Blob ${result.deletedBlobs}。`);
-    } catch (error) {
-      notice.hide();
-      const message = error instanceof Error ? error.message : String(error);
-      new Notice(`释放已删除内容失败：${message}`);
+    });
+  }
+
+  private async runConfiguredOperation(progressText: string, failurePrefix: string, operation: () => Promise<void>): Promise<void> {
+    if (!this.hasConnectionSettings()) {
+      new Notice("请先填写端点、Bucket、Access Key ID 和 Secret Access Key。");
+      return;
     }
+
+    this.setOperationStatus(progressText);
+
+    try {
+      await operation();
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      new Notice(`${failurePrefix}：${message}`);
+    } finally {
+      this.clearOperationStatus();
+    }
+  }
+
+  private setOperationStatus(text: string): void {
+    this.statusBarItem?.classList.remove("is-hidden");
+    this.statusBarItem?.setText(text);
+    this.statusBarItem?.setAttribute("title", text);
+  }
+
+  private clearOperationStatus(): void {
+    this.statusBarItem?.classList.add("is-hidden");
+    this.statusBarItem?.setText("");
+    this.statusBarItem?.removeAttribute("title");
   }
 
   private createObjectStore(): S3ObjectStore {

@@ -118,8 +118,76 @@ describe("auto sync scheduling", () => {
   });
 });
 
+describe("connection config import and export", () => {
+  test("exports shareable fields without access credentials", () => {
+    const plugin = createPlugin({
+      accessKeyId: "AKIA_TEST",
+      secretAccessKey: "SECRET_TEST",
+      rootPrefix: "obsync/v2",
+      accountKey: "team",
+      vaultKey: "notes",
+      vaultId: "vlt_notes",
+    });
+
+    expect(plugin.getConnectionConfig()).toEqual({
+      schemaVersion: 1,
+      endpoint: "https://example.com",
+      bucket: "vault",
+      region: "auto",
+      rootPrefix: "obsync/v2",
+      accountKey: "team",
+      vaultKey: "notes",
+      vaultId: "vlt_notes",
+    });
+    expect(JSON.stringify(plugin.getConnectionConfig())).not.toContain("AKIA_TEST");
+    expect(JSON.stringify(plugin.getConnectionConfig())).not.toContain("SECRET_TEST");
+  });
+
+  test("imports connection config without replacing access credentials", async () => {
+    const plugin = createPlugin({
+      accessKeyId: "existing-key",
+      secretAccessKey: "existing-secret",
+      vaultId: "old-vault",
+    });
+
+    await plugin.importConnectionConfig(JSON.stringify({
+      schemaVersion: 1,
+      endpoint: "https://r2.example.com",
+      bucket: "shared-vault",
+      region: "auto",
+      rootPrefix: "obsync/v2",
+      accountKey: "team",
+      vaultKey: "product",
+      vaultId: "ignored-remote-id",
+    }));
+
+    expect(plugin.settings).toMatchObject({
+      endpoint: "https://r2.example.com",
+      bucket: "shared-vault",
+      region: "auto",
+      rootPrefix: "obsync/v2",
+      accountKey: "team",
+      vaultKey: "product",
+      accessKeyId: "existing-key",
+      secretAccessKey: "existing-secret",
+    });
+    expect(plugin.settings.vaultId).not.toBe("old-vault");
+    expect(plugin.settings.vaultId).not.toBe("ignored-remote-id");
+    expect(plugin.saveSettings).toHaveBeenCalledTimes(1);
+  });
+
+  test("rejects invalid connection config text", async () => {
+    const plugin = createPlugin();
+
+    await expect(plugin.importConnectionConfig("not json")).rejects.toThrow("连接配置不是有效 JSON。");
+    await expect(plugin.importConnectionConfig(JSON.stringify({ schemaVersion: 2 }))).rejects.toThrow("连接配置版本不支持。");
+    await expect(plugin.importConnectionConfig(JSON.stringify({ schemaVersion: 1, endpoint: "x" }))).rejects.toThrow("连接配置缺少 bucket。");
+  });
+});
+
 function createPlugin(settings: Partial<TestSettings> = {}): TestPlugin {
   const plugin = Object.create(ObsyncPlugin.prototype) as TestPlugin;
+  plugin.app = { vault: { getName: () => "ichaly" } };
   plugin.settings = {
     endpoint: "https://example.com",
     bucket: "vault",
@@ -137,12 +205,17 @@ function createPlugin(settings: Partial<TestSettings> = {}): TestPlugin {
     syncState: { files: {} },
     ...settings,
   };
+  plugin.saveSettings = vi.fn(async () => {});
   plugin.syncNow = vi.fn(async () => {});
   return plugin;
 }
 
 type TestPlugin = {
+  app: { vault: { getName: () => string } };
   settings: TestSettings;
+  getConnectionConfig: () => Record<string, string | number>;
+  importConnectionConfig: (text: string) => Promise<void>;
+  saveSettings: ReturnType<typeof vi.fn<() => Promise<void>>>;
   queueAutoSync: (delayMs?: number) => void;
   runAutoSync: () => Promise<void>;
   syncNow: ReturnType<typeof vi.fn<() => Promise<void>>>;

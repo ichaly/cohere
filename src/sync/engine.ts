@@ -143,104 +143,7 @@ export async function syncOnce(input: SyncOnceInput): Promise<SyncResult> {
   }
 
   try {
-    await mapLimit(actions, SYNC_CONCURRENCY, async (item) => {
-      if (item.action === "upload" && item.local) {
-        await writeBlob(input.store, manifest, item.local.hash, item.local.bytes, item.local.size, input.now());
-        manifest.paths[item.path] = {
-          contentHash: item.local.hash,
-          size: item.local.size,
-          updatedAt: input.now(),
-          updatedBy: input.deviceId,
-          revision: nextRevision(manifest),
-          version: createVersion(input.deviceId, input.now(), item.local.hash),
-        };
-        input.state.files[item.path] = syncedState(item.local.hash, item.local, manifest.paths[item.path].version);
-        result.uploaded += 1;
-      }
-
-      if (item.action === "download" && item.remote) {
-        const bytes = await input.store.readObject(blobObjectKey(item.remote.contentHash));
-        await input.vault.write(item.path, bytes);
-        input.state.files[item.path] = syncedState(item.remote.contentHash, { size: bytes.byteLength, mtime: null }, item.remote.version);
-        result.downloaded += 1;
-      }
-
-      if (item.action === "conflict" && item.remote) {
-        const bytes = await input.store.readObject(blobObjectKey(item.remote.contentHash));
-        await input.vault.write(createConflictPath(item.path, input.deviceName, input.now()), bytes);
-        input.state.files[item.path] = {
-          lastSyncedHash: item.lastSyncedHash,
-          remoteHash: item.remote.contentHash,
-          deleted: false,
-          version: item.remote.version,
-          localMtime: null,
-          localSize: null,
-        };
-        result.conflicts += 1;
-      }
-
-      if (item.action === "conflict" && item.deleted && item.local && !item.remote) {
-        await input.vault.write(createConflictPath(item.path, input.deviceName, input.now()), item.local.bytes);
-        await input.vault.delete(item.path);
-        input.state.files[item.path] = {
-          lastSyncedHash: item.deleted.previousContentHash,
-          remoteHash: item.deleted.previousContentHash,
-          deleted: true,
-          version: item.deleted.previousVersion,
-          localMtime: null,
-          localSize: null,
-        };
-        result.conflicts += 1;
-        result.deletedLocal += 1;
-      }
-
-      if (item.action === "mark-remote-deleted") {
-        const remote = manifest.paths[item.path];
-        delete manifest.paths[item.path];
-        manifest.deleted[item.path] = {
-          deletedAt: input.now(),
-          deletedRevision: nextRevision(manifest),
-          previousContentHash: item.lastSyncedHash ?? remote?.contentHash ?? null,
-          previousVersion: item.lastVersion ?? remote?.version ?? null,
-          deletedBy: input.deviceId,
-        };
-        input.state.files[item.path] = {
-          lastSyncedHash: item.lastSyncedHash ?? remote?.contentHash ?? null,
-          remoteHash: item.lastSyncedHash ?? remote?.contentHash ?? null,
-          deleted: true,
-          version: item.lastVersion ?? remote?.version ?? null,
-          localMtime: null,
-          localSize: null,
-        };
-        result.deletedRemote += 1;
-      }
-
-      if (item.action === "delete-local" && item.remote) {
-        await input.vault.delete(item.path);
-        input.state.files[item.path] = {
-          lastSyncedHash: item.remote.contentHash,
-          remoteHash: item.remote.contentHash,
-          deleted: true,
-          version: item.remote.version,
-          localMtime: null,
-          localSize: null,
-        };
-        result.deletedLocal += 1;
-      }
-
-      if (item.action === "delete-local" && item.deleted) {
-        await input.vault.delete(item.path);
-        input.state.files[item.path] = {
-          lastSyncedHash: item.deleted.previousContentHash,
-          remoteHash: item.deleted.previousContentHash,
-          deleted: true,
-          version: item.deleted.previousVersion,
-          localMtime: null,
-          localSize: null,
-        };
-        result.deletedLocal += 1;
-      }
-    });
+    await mapLimit(actions, SYNC_CONCURRENCY, (item) => applyAction(item, input, manifest, result));
 
     pruneTombstones(manifest, input.state, expiredTombstones);
     updateDeviceCheckpoint(manifest, input);
@@ -256,6 +159,64 @@ export async function syncOnce(input: SyncOnceInput): Promise<SyncResult> {
     if (locked) {
       await input.store.releaseLock();
     }
+  }
+}
+
+async function applyAction(item: PlannedFile, input: SyncOnceInput, manifest: RemoteManifest, result: SyncResult): Promise<void> {
+  if (item.action === "upload" && item.local) {
+    await writeBlob(input.store, manifest, item.local.hash, item.local.bytes, item.local.size, input.now());
+    manifest.paths[item.path] = activeEntry(item.local, input.deviceId, input.now(), nextRevision(manifest));
+    input.state.files[item.path] = syncedState(item.local.hash, item.local, manifest.paths[item.path].version);
+    result.uploaded += 1;
+    return;
+  }
+
+  if (item.action === "download" && item.remote) {
+    const bytes = await input.store.readObject(blobObjectKey(item.remote.contentHash));
+    await input.vault.write(item.path, bytes);
+    input.state.files[item.path] = syncedState(item.remote.contentHash, { size: bytes.byteLength, mtime: null }, item.remote.version);
+    result.downloaded += 1;
+    return;
+  }
+
+  if (item.action === "conflict") {
+    await applyConflict(item, input, result);
+    return;
+  }
+
+  if (item.action === "mark-remote-deleted") {
+    const remote = manifest.paths[item.path];
+    delete manifest.paths[item.path];
+    manifest.deleted[item.path] = tombstoneEntry(item, remote, input.deviceId, input.now(), nextRevision(manifest));
+    input.state.files[item.path] = deletedState(manifest.deleted[item.path].previousContentHash, manifest.deleted[item.path].previousVersion);
+    result.deletedRemote += 1;
+    return;
+  }
+
+  if (item.action === "delete-local") {
+    await input.vault.delete(item.path);
+    input.state.files[item.path] = deletedState(item.remote?.contentHash ?? item.deleted?.previousContentHash ?? null, item.remote?.version ?? item.deleted?.previousVersion ?? null);
+    result.deletedLocal += 1;
+  }
+}
+
+async function applyConflict(item: PlannedFile, input: SyncOnceInput, result: SyncResult): Promise<void> {
+  if (item.remote) {
+    const bytes = await input.store.readObject(blobObjectKey(item.remote.contentHash));
+    await input.vault.write(createConflictPath(item.path, input.deviceName, input.now()), bytes);
+    input.state.files[item.path] = {
+      ...syncedState(item.lastSyncedHash, { mtime: null, size: null }, item.remote.version),
+      remoteHash: item.remote.contentHash,
+    };
+    result.conflicts += 1;
+  }
+
+  if (item.deleted && item.local && !item.remote) {
+    await input.vault.write(createConflictPath(item.path, input.deviceName, input.now()), item.local.bytes);
+    await input.vault.delete(item.path);
+    input.state.files[item.path] = deletedState(item.deleted.previousContentHash, item.deleted.previousVersion);
+    result.conflicts += 1;
+    result.deletedLocal += 1;
   }
 }
 
@@ -401,7 +362,28 @@ export function blobObjectKey(hash: string): string {
   return `blobs/sha256/${hash.slice(0, 2)}/${hash.slice(2, 4)}/${hash}`;
 }
 
-function syncedState(hash: string, local: { mtime: number | null; size: number | null }, version: string): LocalFileState {
+function activeEntry(local: { hash: string; size: number }, deviceId: string, now: number, revision: number): ManifestFileEntry {
+  return {
+    contentHash: local.hash,
+    size: local.size,
+    updatedAt: now,
+    updatedBy: deviceId,
+    revision,
+    version: createVersion(deviceId, now, local.hash),
+  };
+}
+
+function tombstoneEntry(item: PlannedFile, remote: ManifestFileEntry | undefined, deviceId: string, now: number, revision: number): DeletedPathEntry {
+  return {
+    deletedAt: now,
+    deletedRevision: revision,
+    previousContentHash: item.lastSyncedHash ?? remote?.contentHash ?? null,
+    previousVersion: item.lastVersion ?? remote?.version ?? null,
+    deletedBy: deviceId,
+  };
+}
+
+function syncedState(hash: string | null, local: { mtime: number | null; size: number | null }, version: string | null): LocalFileState {
   return {
     lastSyncedHash: hash,
     remoteHash: hash,
@@ -409,6 +391,17 @@ function syncedState(hash: string, local: { mtime: number | null; size: number |
     version,
     localMtime: local.mtime,
     localSize: local.size,
+  };
+}
+
+function deletedState(hash: string | null, version: string | null): LocalFileState {
+  return {
+    lastSyncedHash: hash,
+    remoteHash: hash,
+    deleted: true,
+    version,
+    localMtime: null,
+    localSize: null,
   };
 }
 

@@ -4,6 +4,15 @@
   container-type: inline-size;
 }
 
+.obsync-status-bar-item {
+  @apply flex items-center gap-1 text-xs;
+  color: var(--text-muted);
+}
+
+.obsync-status-bar-item.is-hidden {
+  display: none;
+}
+
 .obsync-panel {
   @apply w-full max-w-3xl pb-6;
   color: var(--text-normal);
@@ -232,6 +241,14 @@
   }
 }
 
+.obsync-toggle-row {
+  @apply flex items-center justify-between gap-5;
+
+  .obsync-row-copy {
+    @apply mb-0;
+  }
+}
+
 .obsync-row-block {
   @apply block;
 }
@@ -282,6 +299,14 @@
     @apply mb-2;
   }
 
+  .obsync-toggle-row {
+    @apply flex gap-4;
+
+    .obsync-row-copy {
+      @apply mb-0;
+    }
+  }
+
   .obsync-row-title {
     @apply items-start;
   }
@@ -309,7 +334,7 @@
     @apply mt-2;
   }
 
-  .obsync-switch {
+  .obsync-row:not(.obsync-toggle-row) .obsync-switch {
     @apply mt-2;
   }
 }
