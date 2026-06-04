@@ -1,0 +1,83 @@
+@import "tailwindcss/theme.css" layer(theme);
+@import "tailwindcss/utilities.css" layer(utilities);
+
+@layer components {
+  .obsync-panel {
+    @apply max-w-3xl space-y-5 text-[var(--text-normal)];
+  }
+
+  .obsync-header {
+    @apply flex items-start justify-between gap-4 border-b border-[var(--background-modifier-border)] pb-4;
+  }
+
+  .obsync-eyebrow {
+    @apply m-0 text-xs font-semibold uppercase tracking-wide text-[var(--text-muted)];
+  }
+
+  .obsync-title {
+    @apply m-0 mt-1 text-2xl font-semibold text-[var(--text-normal)];
+  }
+
+  .obsync-status {
+    @apply rounded-md border border-[var(--background-modifier-border)] px-3 py-1 text-xs text-[var(--text-muted)];
+  }
+
+  .obsync-section {
+    @apply space-y-3 rounded-lg border border-[var(--background-modifier-border)] bg-[var(--background-secondary)] p-4;
+  }
+
+  .obsync-section-copy h3 {
+    @apply m-0 text-base font-semibold text-[var(--text-normal)];
+  }
+
+  .obsync-section-copy p {
+    @apply m-0 mt-1 text-sm text-[var(--text-muted)];
+  }
+
+  .obsync-field {
+    @apply grid gap-1.5 text-sm font-medium text-[var(--text-muted)];
+  }
+
+  .obsync-field input {
+    @apply w-full rounded-md border border-[var(--background-modifier-border)] bg-[var(--background-primary)] px-3 py-2 text-sm text-[var(--text-normal)] outline-none transition;
+  }
+
+  .obsync-field input:focus {
+    @apply border-[var(--interactive-accent)] shadow-[0_0_0_2px_var(--background-modifier-border-focus)];
+  }
+
+  .obsync-readonly-row {
+    @apply flex items-center justify-between gap-3 rounded-md bg-[var(--background-primary)] p-3;
+  }
+
+  .obsync-readonly-row span {
+    @apply block text-sm font-medium text-[var(--text-muted)];
+  }
+
+  .obsync-readonly-row code {
+    @apply mt-1 block break-all text-sm text-[var(--text-normal)];
+  }
+
+  .obsync-readonly-row button,
+  .obsync-primary {
+    @apply rounded-md bg-[var(--interactive-accent)] px-3 py-2 text-sm font-medium text-[var(--text-on-accent)] transition;
+  }
+
+  .obsync-readonly-row button:hover,
+  .obsync-primary:hover {
+    @apply opacity-90;
+  }
+
+  .obsync-toggle {
+    @apply flex items-center gap-2 text-sm text-[var(--text-normal)];
+  }
+
+  .obsync-toggle input {
+    @apply h-4 w-4;
+  }
+
+  .obsync-section pre {
+    @apply max-h-64 overflow-auto rounded-md bg-[var(--background-primary)] p-3 text-xs text-[var(--text-normal)];
+  }
+}
+

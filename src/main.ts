@@ -1,4 +1,7 @@
-import { App, Notice, Plugin, PluginSettingTab, Setting } from "obsidian";
+import { App, Notice, Plugin, PluginSettingTab } from "obsidian";
+import { createApp, type App as VueApp } from "vue";
+import SettingsApp from "./settings/SettingsApp.vue";
+import "./styles.css";
 
 interface ObsyncSettings {
   endpoint: string;
@@ -101,6 +104,7 @@ export default class ObsyncPlugin extends Plugin {
 
 class ObsyncSettingTab extends PluginSettingTab {
   plugin: ObsyncPlugin;
+  vueApp: VueApp<Element> | null = null;
 
   constructor(app: App, plugin: ObsyncPlugin) {
     super(app, plugin);
@@ -109,100 +113,33 @@ class ObsyncSettingTab extends PluginSettingTab {
 
   display(): void {
     const { containerEl } = this;
+    this.vueApp?.unmount();
     containerEl.empty();
 
-    containerEl.createEl("h2", { text: "Obsync" });
+    const mountEl = containerEl.createDiv({ cls: "obsync-settings-root" });
+    this.vueApp = createApp(SettingsApp, {
+      settings: this.plugin.settings,
+      connectionConfig: this.plugin.getConnectionConfig(),
+      onUpdate: async (update: Partial<ObsyncSettings>) => {
+        await this.plugin.updateSettings(update);
+        this.display();
+      },
+      onCopyVaultId: async () => {
+        await navigator.clipboard.writeText(this.plugin.settings.vaultId);
+        new Notice("Vault ID copied.");
+      },
+      onCopyConnectionConfig: async () => {
+        await navigator.clipboard.writeText(JSON.stringify(this.plugin.getConnectionConfig(), null, 2));
+        new Notice("Connection config copied.");
+      },
+    });
+    this.vueApp.mount(mountEl);
+  }
 
-    new Setting(containerEl)
-      .setName("Endpoint")
-      .setDesc("OSS / S3-compatible endpoint.")
-      .addText((text) =>
-        text
-          .setPlaceholder("https://oss-cn-example.aliyuncs.com")
-          .setValue(this.plugin.settings.endpoint)
-          .onChange(async (value) => {
-            await this.plugin.updateSettings({ endpoint: value.trim() });
-          }),
-      );
-
-    new Setting(containerEl)
-      .setName("Bucket")
-      .setDesc("Bucket used to store synced vault data.")
-      .addText((text) =>
-        text.setValue(this.plugin.settings.bucket).onChange(async (value) => {
-          await this.plugin.updateSettings({ bucket: value.trim() });
-        }),
-      );
-
-    new Setting(containerEl)
-      .setName("Root prefix")
-      .setDesc("Prefix inside the bucket.")
-      .addText((text) =>
-        text.setValue(this.plugin.settings.rootPrefix).onChange(async (value) => {
-          await this.plugin.updateSettings({ rootPrefix: value.trim() || "obsync/v1" });
-        }),
-      );
-
-    new Setting(containerEl)
-      .setName("Account key")
-      .setDesc("Shared across devices for the same user or team.")
-      .addText((text) =>
-        text.setValue(this.plugin.settings.accountKey).onChange(async (value) => {
-          await this.plugin.updateSettings({ accountKey: value });
-          this.display();
-        }),
-      );
-
-    new Setting(containerEl)
-      .setName("Vault key")
-      .setDesc("Shared across devices for the same Obsidian vault.")
-      .addText((text) =>
-        text.setValue(this.plugin.settings.vaultKey).onChange(async (value) => {
-          await this.plugin.updateSettings({ vaultKey: value });
-          this.display();
-        }),
-      );
-
-    new Setting(containerEl)
-      .setName("Vault ID")
-      .setDesc(this.plugin.settings.vaultId)
-      .addButton((button) =>
-        button.setButtonText("Copy").onClick(async () => {
-          await navigator.clipboard.writeText(this.plugin.settings.vaultId);
-          new Notice("Vault ID copied.");
-        }),
-      );
-
-    new Setting(containerEl)
-      .setName("Device name")
-      .setDesc("Used only for UI and conflict file names.")
-      .addText((text) =>
-        text.setValue(this.plugin.settings.deviceName).onChange(async (value) => {
-          await this.plugin.updateSettings({ deviceName: value.trim() || "This device" });
-        }),
-      );
-
-    new Setting(containerEl)
-      .setName("Device ID")
-      .setDesc(this.plugin.settings.deviceId);
-
-    new Setting(containerEl)
-      .setName("Auto sync")
-      .addToggle((toggle) =>
-        toggle.setValue(this.plugin.settings.autoSync).onChange(async (value) => {
-          await this.plugin.updateSettings({ autoSync: value });
-        }),
-      );
-
-    new Setting(containerEl)
-      .setName("Copy connection config")
-      .setDesc("Copies connection settings without OSS credentials.")
-      .addButton((button) =>
-        button.setButtonText("Copy JSON").onClick(async () => {
-          await navigator.clipboard.writeText(JSON.stringify(this.plugin.getConnectionConfig(), null, 2));
-          new Notice("Connection config copied.");
-        }),
-      );
+  hide(): void {
+    this.vueApp?.unmount();
+    this.vueApp = null;
+    super.hide();
   }
 }
 
@@ -251,4 +188,3 @@ function base32Url(bytes: Uint8Array): string {
 
   return output;
 }
-

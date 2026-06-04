@@ -1,5 +1,7 @@
 import { copyFileSync, existsSync } from "node:fs";
 import { builtinModules } from "node:module";
+import tailwindcss from "@tailwindcss/vite";
+import vue from "@vitejs/plugin-vue";
 import { defineConfig } from "vite";
 
 const obsidianExternals = [
@@ -20,11 +22,16 @@ const obsidianExternals = [
 
 export default defineConfig({
   plugins: [
+    vue(),
+    tailwindcss(),
     {
       name: "copy-obsidian-plugin-bundle",
       closeBundle() {
         if (existsSync("dist/main.js")) {
           copyFileSync("dist/main.js", "main.js");
+        }
+        if (existsSync("dist/main.css")) {
+          copyFileSync("dist/main.css", "styles.css");
         }
       },
     },
@@ -39,6 +46,7 @@ export default defineConfig({
     rollupOptions: {
       external: [...obsidianExternals, ...builtinModules],
       output: {
+        assetFileNames: "main.css",
         entryFileNames: "main.js",
         exports: "default",
       },
