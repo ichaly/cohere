@@ -11,9 +11,10 @@ npm install
 npm run build
 ```
 
+The build uses Vite and writes the Obsidian plugin bundle to `main.js`.
+
 ## Plugin ID
 
 ```text
 obsync
 ```
-
