@@ -1,83 +1,274 @@
-@import "tailwindcss/theme.css" layer(theme);
-@import "tailwindcss/utilities.css" layer(utilities);
+.obsync-settings-root {
+  container-type: inline-size;
+}
 
-@layer components {
-  .obsync-panel {
-    @apply max-w-3xl space-y-5 text-[var(--text-normal)];
+.obsync-panel {
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 760px;
+  padding: 0 0 24px;
+  color: var(--text-normal);
+}
+
+.obsync-panel *,
+.obsync-panel *::before,
+.obsync-panel *::after {
+  box-sizing: border-box;
+}
+
+.obsync-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 16px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--background-modifier-border);
+}
+
+.obsync-eyebrow,
+.obsync-subtitle,
+.obsync-section-copy p {
+  margin: 0;
+  color: var(--text-muted);
+}
+
+.obsync-eyebrow {
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+.obsync-title {
+  margin: 4px 0 0;
+  color: var(--text-normal);
+  font-size: 24px;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.obsync-subtitle {
+  margin-top: 6px;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.obsync-status {
+  flex: 0 0 auto;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 6px;
+  padding: 4px 8px;
+  color: var(--text-muted);
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.obsync-section {
+  margin-top: 12px;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 8px;
+  background: var(--background-secondary);
+  padding: 14px;
+}
+
+.obsync-section-copy {
+  margin-bottom: 12px;
+
+  h3 {
+    margin: 0;
+    color: var(--text-normal);
+    font-size: 16px;
+    font-weight: 700;
+    line-height: 1.35;
   }
 
+  p {
+    margin-top: 4px;
+    font-size: 13px;
+    line-height: 1.55;
+  }
+}
+
+.obsync-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 12px;
+}
+
+.obsync-field {
+  display: grid;
+  min-width: 0;
+  gap: 6px;
+  color: var(--text-muted);
+  font-size: 13px;
+  font-weight: 600;
+
+  span {
+    line-height: 1.35;
+  }
+
+  input {
+    width: 100%;
+    min-width: 0;
+    height: 36px;
+    border: 1px solid var(--background-modifier-border);
+    border-radius: 6px;
+    background: var(--background-primary);
+    color: var(--text-normal);
+    font-size: 14px;
+    line-height: 20px;
+    outline: none;
+    padding: 7px 10px;
+    transition: border-color 120ms ease, box-shadow 120ms ease;
+  }
+
+  input:focus {
+    border-color: var(--interactive-accent);
+    box-shadow: 0 0 0 2px var(--background-modifier-border-focus);
+  }
+
+  input::placeholder {
+    color: var(--text-faint);
+  }
+}
+
+.obsync-field-wide {
+  grid-column: 1 / -1;
+}
+
+.obsync-readonly-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-width: 0;
+  margin-top: 12px;
+  border-radius: 6px;
+  background: var(--background-primary);
+  padding: 10px;
+
+  > div {
+    min-width: 0;
+  }
+
+  span {
+    display: block;
+    color: var(--text-muted);
+    font-size: 13px;
+    font-weight: 600;
+    line-height: 1.35;
+  }
+
+  code {
+    display: block;
+    margin-top: 4px;
+    color: var(--text-normal);
+    font-size: 12px;
+    line-height: 1.45;
+    overflow-wrap: anywhere;
+    white-space: normal;
+  }
+}
+
+.obsync-readonly-row button,
+.obsync-primary {
+  border: none;
+  border-radius: 6px;
+  background: var(--interactive-accent);
+  color: var(--text-on-accent);
+  cursor: pointer;
+  flex: 0 0 auto;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 20px;
+  min-height: 34px;
+  padding: 7px 12px;
+  transition: opacity 120ms ease, transform 120ms ease;
+}
+
+.obsync-readonly-row button:hover,
+.obsync-primary:hover {
+  opacity: 0.92;
+}
+
+.obsync-readonly-row button:active,
+.obsync-primary:active {
+  transform: translateY(1px);
+}
+
+.obsync-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 12px;
+  color: var(--text-normal);
+  font-size: 14px;
+  line-height: 1.4;
+
+  input {
+    flex: 0 0 auto;
+    width: 16px;
+    height: 16px;
+  }
+}
+
+.obsync-section pre {
+  max-height: 240px;
+  margin: 0 0 12px;
+  overflow: auto;
+  border-radius: 6px;
+  background: var(--background-primary);
+  color: var(--text-normal);
+  font-size: 12px;
+  line-height: 1.5;
+  padding: 10px;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+@container (max-width: 560px) {
   .obsync-header {
-    @apply flex items-start justify-between gap-4 border-b border-[var(--background-modifier-border)] pb-4;
-  }
-
-  .obsync-eyebrow {
-    @apply m-0 text-xs font-semibold uppercase tracking-wide text-[var(--text-muted)];
-  }
-
-  .obsync-title {
-    @apply m-0 mt-1 text-2xl font-semibold text-[var(--text-normal)];
+    display: block;
   }
 
   .obsync-status {
-    @apply rounded-md border border-[var(--background-modifier-border)] px-3 py-1 text-xs text-[var(--text-muted)];
+    display: inline-block;
+    margin-top: 10px;
   }
 
-  .obsync-section {
-    @apply space-y-3 rounded-lg border border-[var(--background-modifier-border)] bg-[var(--background-secondary)] p-4;
+  .obsync-grid {
+    grid-template-columns: 1fr;
   }
 
-  .obsync-section-copy h3 {
-    @apply m-0 text-base font-semibold text-[var(--text-normal)];
-  }
-
-  .obsync-section-copy p {
-    @apply m-0 mt-1 text-sm text-[var(--text-muted)];
-  }
-
-  .obsync-field {
-    @apply grid gap-1.5 text-sm font-medium text-[var(--text-muted)];
-  }
-
-  .obsync-field input {
-    @apply w-full rounded-md border border-[var(--background-modifier-border)] bg-[var(--background-primary)] px-3 py-2 text-sm text-[var(--text-normal)] outline-none transition;
-  }
-
-  .obsync-field input:focus {
-    @apply border-[var(--interactive-accent)] shadow-[0_0_0_2px_var(--background-modifier-border-focus)];
+  .obsync-field-wide {
+    grid-column: auto;
   }
 
   .obsync-readonly-row {
-    @apply flex items-center justify-between gap-3 rounded-md bg-[var(--background-primary)] p-3;
+    align-items: stretch;
+    flex-direction: column;
+
+    button {
+      width: 100%;
+    }
   }
 
-  .obsync-readonly-row span {
-    @apply block text-sm font-medium text-[var(--text-muted)];
-  }
-
-  .obsync-readonly-row code {
-    @apply mt-1 block break-all text-sm text-[var(--text-normal)];
-  }
-
-  .obsync-readonly-row button,
   .obsync-primary {
-    @apply rounded-md bg-[var(--interactive-accent)] px-3 py-2 text-sm font-medium text-[var(--text-on-accent)] transition;
+    width: 100%;
+  }
+}
+
+@media (max-width: 560px) {
+  .obsync-panel {
+    padding-bottom: 16px;
   }
 
-  .obsync-readonly-row button:hover,
-  .obsync-primary:hover {
-    @apply opacity-90;
+  .obsync-title {
+    font-size: 22px;
   }
 
-  .obsync-toggle {
-    @apply flex items-center gap-2 text-sm text-[var(--text-normal)];
-  }
-
-  .obsync-toggle input {
-    @apply h-4 w-4;
-  }
-
-  .obsync-section pre {
-    @apply max-h-64 overflow-auto rounded-md bg-[var(--background-primary)] p-3 text-xs text-[var(--text-normal)];
+  .obsync-section {
+    padding: 12px;
   }
 }
 

@@ -61,7 +61,7 @@ export default class ObsyncPlugin extends Plugin {
       name: "Copy connection config",
       callback: async () => {
         await navigator.clipboard.writeText(JSON.stringify(this.getConnectionConfig(), null, 2));
-        new Notice("Obsync connection config copied.");
+        new Notice("Obsync 连接配置已复制。");
       },
     });
 
@@ -70,11 +70,11 @@ export default class ObsyncPlugin extends Plugin {
 
   async syncNow(): Promise<void> {
     if (!this.settings.endpoint || !this.settings.bucket || !this.settings.accessKeyId || !this.settings.secretAccessKey) {
-      new Notice("Obsync needs endpoint, bucket, access key, and secret key before syncing.");
+      new Notice("请先填写端点、Bucket、Access Key ID 和 Secret Access Key。");
       return;
     }
 
-    new Notice("Obsync syncing...");
+    new Notice("Obsync 正在同步...");
 
     try {
       const store = new S3ObjectStore({
@@ -114,14 +114,14 @@ export default class ObsyncPlugin extends Plugin {
       await this.saveSettings();
 
       if (result.locked) {
-        new Notice("Obsync skipped because another device is syncing.");
+        new Notice("另一台设备正在同步，本次已跳过。");
         return;
       }
 
-      new Notice(`Obsync done: ${result.uploaded} uploaded, ${result.downloaded} downloaded, ${result.conflicts} conflicts.`);
+      new Notice(`Obsync 同步完成：上传 ${result.uploaded}，下载 ${result.downloaded}，冲突 ${result.conflicts}。`);
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
-      new Notice(`Obsync failed: ${message}`);
+      new Notice(`Obsync 同步失败：${message}`);
     }
   }
 
@@ -272,11 +272,11 @@ class ObsyncSettingTab extends PluginSettingTab {
       },
       onCopyVaultId: async () => {
         await navigator.clipboard.writeText(this.plugin.settings.vaultId);
-        new Notice("Vault ID copied.");
+        new Notice("Vault ID 已复制。");
       },
       onCopyConnectionConfig: async () => {
         await navigator.clipboard.writeText(JSON.stringify(this.plugin.getConnectionConfig(), null, 2));
-        new Notice("Connection config copied.");
+        new Notice("连接配置已复制。");
       },
     });
     this.vueApp.mount(mountEl);
