@@ -1,274 +1,219 @@
+@reference "tailwindcss";
+
 .obsync-settings-root {
   container-type: inline-size;
 }
 
 .obsync-panel {
-  box-sizing: border-box;
-  width: 100%;
-  max-width: 760px;
-  padding: 0 0 24px;
+  @apply w-full max-w-3xl pb-6;
   color: var(--text-normal);
 }
 
 .obsync-panel *,
 .obsync-panel *::before,
 .obsync-panel *::after {
-  box-sizing: border-box;
+  @apply box-border;
 }
 
 .obsync-header {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 12px;
-  margin-bottom: 16px;
-  padding-bottom: 14px;
-  border-bottom: 1px solid var(--background-modifier-border);
+  @apply mb-4 flex items-start justify-between gap-3;
 }
 
 .obsync-eyebrow,
 .obsync-subtitle,
-.obsync-section-copy p {
-  margin: 0;
+.obsync-row-copy p {
+  @apply m-0;
   color: var(--text-muted);
 }
 
 .obsync-eyebrow {
-  font-size: 12px;
-  font-weight: 600;
-  line-height: 1.4;
+  @apply text-xs font-semibold leading-5;
 }
 
 .obsync-title {
-  margin: 4px 0 0;
+  @apply m-0 mt-1 text-2xl font-bold leading-tight;
   color: var(--text-normal);
-  font-size: 24px;
-  font-weight: 700;
-  line-height: 1.2;
 }
 
 .obsync-subtitle {
-  margin-top: 6px;
-  font-size: 14px;
-  line-height: 1.5;
+  @apply mt-1 text-sm leading-6;
 }
 
 .obsync-status {
-  flex: 0 0 auto;
+  @apply shrink-0 rounded-md px-2 py-1 text-xs leading-5;
   border: 1px solid var(--background-modifier-border);
-  border-radius: 6px;
-  padding: 4px 8px;
   color: var(--text-muted);
-  font-size: 12px;
-  line-height: 1.4;
 }
 
-.obsync-section {
-  margin-top: 12px;
-  border: 1px solid var(--background-modifier-border);
-  border-radius: 8px;
+.obsync-card {
+  @apply mb-5 rounded-xl p-0;
   background: var(--background-secondary);
-  padding: 14px;
 }
 
-.obsync-section-copy {
-  margin-bottom: 12px;
+.obsync-row {
+  @apply flex items-center justify-between gap-5 px-5 py-4;
+  border-bottom: 1px solid var(--background-modifier-border);
+}
+
+.obsync-row:last-child {
+  @apply border-b-0;
+}
+
+.obsync-row-copy {
+  @apply min-w-0 flex-1;
 
   h3 {
-    margin: 0;
+    @apply m-0 text-base font-semibold leading-6;
     color: var(--text-normal);
-    font-size: 16px;
-    font-weight: 700;
-    line-height: 1.35;
   }
 
   p {
-    margin-top: 4px;
-    font-size: 13px;
-    line-height: 1.55;
+    @apply mt-0.5 text-sm leading-5;
   }
 }
 
-.obsync-grid {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-  gap: 12px;
+.obsync-control {
+  @apply w-60 shrink-0;
 }
 
-.obsync-field {
-  display: grid;
-  min-width: 0;
-  gap: 6px;
-  color: var(--text-muted);
-  font-size: 13px;
-  font-weight: 600;
-
-  span {
-    line-height: 1.35;
-  }
-
-  input {
-    width: 100%;
-    min-width: 0;
-    height: 36px;
-    border: 1px solid var(--background-modifier-border);
-    border-radius: 6px;
-    background: var(--background-primary);
-    color: var(--text-normal);
-    font-size: 14px;
-    line-height: 20px;
-    outline: none;
-    padding: 7px 10px;
-    transition: border-color 120ms ease, box-shadow 120ms ease;
-  }
-
-  input:focus {
-    border-color: var(--interactive-accent);
-    box-shadow: 0 0 0 2px var(--background-modifier-border-focus);
-  }
-
-  input::placeholder {
-    color: var(--text-faint);
-  }
+.obsync-control-wide {
+  @apply w-80;
 }
 
-.obsync-field-wide {
-  grid-column: 1 / -1;
-}
-
-.obsync-readonly-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  min-width: 0;
-  margin-top: 12px;
-  border-radius: 6px;
+.obsync-control input {
+  @apply h-9 w-full min-w-0 rounded-md px-3 py-2 text-sm outline-none transition;
   background: var(--background-primary);
-  padding: 10px;
-
-  > div {
-    min-width: 0;
-  }
-
-  span {
-    display: block;
-    color: var(--text-muted);
-    font-size: 13px;
-    font-weight: 600;
-    line-height: 1.35;
-  }
-
-  code {
-    display: block;
-    margin-top: 4px;
-    color: var(--text-normal);
-    font-size: 12px;
-    line-height: 1.45;
-    overflow-wrap: anywhere;
-    white-space: normal;
-  }
+  border: 1px solid var(--background-modifier-border);
+  color: var(--text-normal);
 }
 
-.obsync-readonly-row button,
+.obsync-control input:focus {
+  border-color: var(--interactive-accent);
+  box-shadow: 0 0 0 2px var(--background-modifier-border-focus);
+}
+
+.obsync-control input::placeholder {
+  color: var(--text-faint);
+}
+
+.obsync-readonly {
+  @apply flex min-w-0 shrink-0 items-center justify-end gap-3;
+  width: min(380px, 58%);
+}
+
+.obsync-readonly code {
+  @apply min-w-0 flex-1 break-all text-right text-xs leading-5;
+  color: var(--text-normal);
+}
+
+.obsync-readonly button,
 .obsync-primary {
-  border: none;
-  border-radius: 6px;
+  @apply shrink-0 cursor-pointer rounded-md border-0 px-3 py-2 text-sm font-semibold leading-5 transition;
   background: var(--interactive-accent);
   color: var(--text-on-accent);
-  cursor: pointer;
-  flex: 0 0 auto;
-  font-size: 14px;
-  font-weight: 600;
-  line-height: 20px;
-  min-height: 34px;
-  padding: 7px 12px;
-  transition: opacity 120ms ease, transform 120ms ease;
 }
 
-.obsync-readonly-row button:hover,
+.obsync-readonly button:hover,
 .obsync-primary:hover {
-  opacity: 0.92;
+  @apply opacity-90;
 }
 
-.obsync-readonly-row button:active,
+.obsync-readonly button:active,
 .obsync-primary:active {
-  transform: translateY(1px);
+  @apply translate-y-px;
 }
 
-.obsync-toggle {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-top: 12px;
-  color: var(--text-normal);
-  font-size: 14px;
-  line-height: 1.4;
+.obsync-switch {
+  @apply relative block h-6 w-11 shrink-0 cursor-pointer;
 
   input {
-    flex: 0 0 auto;
-    width: 16px;
-    height: 16px;
+    @apply sr-only;
+  }
+
+  span {
+    @apply absolute inset-0 rounded-full transition;
+    background: var(--background-modifier-border);
+  }
+
+  span::before {
+    @apply absolute left-1 top-1 h-4 w-4 rounded-full transition;
+    background: var(--background-primary);
+    content: "";
+  }
+
+  input:checked + span {
+    background: var(--interactive-accent);
+  }
+
+  input:checked + span::before {
+    @apply translate-x-5;
   }
 }
 
-.obsync-section pre {
-  max-height: 240px;
-  margin: 0 0 12px;
-  overflow: auto;
-  border-radius: 6px;
-  background: var(--background-primary);
-  color: var(--text-normal);
-  font-size: 12px;
-  line-height: 1.5;
-  padding: 10px;
-  white-space: pre-wrap;
-  overflow-wrap: anywhere;
+.obsync-row-block {
+  @apply block;
 }
 
-@container (max-width: 560px) {
+.obsync-row-block .obsync-row-copy {
+  @apply mb-3;
+}
+
+.obsync-row-block pre {
+  @apply mb-3 max-h-60 overflow-auto rounded-md p-3 text-xs leading-5;
+  background: var(--background-primary);
+  color: var(--text-normal);
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+
+@container (max-width: 640px) {
   .obsync-header {
-    display: block;
+    @apply block;
   }
 
   .obsync-status {
-    display: inline-block;
-    margin-top: 10px;
+    @apply mt-3 inline-block;
   }
 
-  .obsync-grid {
-    grid-template-columns: 1fr;
+  .obsync-card {
+    @apply mb-4 rounded-lg;
   }
 
-  .obsync-field-wide {
-    grid-column: auto;
+  .obsync-row {
+    @apply block px-4 py-4;
   }
 
-  .obsync-readonly-row {
-    align-items: stretch;
-    flex-direction: column;
-
-    button {
-      width: 100%;
-    }
+  .obsync-row-copy {
+    @apply mb-2;
   }
 
+  .obsync-control,
+  .obsync-control-wide,
+  .obsync-readonly {
+    @apply w-full;
+  }
+
+  .obsync-readonly {
+    @apply flex-col items-stretch gap-2;
+  }
+
+  .obsync-readonly code {
+    @apply text-left;
+  }
+
+  .obsync-readonly button,
   .obsync-primary {
-    width: 100%;
+    @apply w-full;
+  }
+
+  .obsync-switch {
+    @apply mt-2;
   }
 }
 
 @media (max-width: 560px) {
-  .obsync-panel {
-    padding-bottom: 16px;
-  }
-
   .obsync-title {
-    font-size: 22px;
-  }
-
-  .obsync-section {
-    padding: 12px;
+    @apply text-xl;
   }
 }
 

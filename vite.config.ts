@@ -1,5 +1,4 @@
 import { builtinModules } from "node:module";
-import tailwindcss from "@tailwindcss/vite";
 import vue from "@vitejs/plugin-vue";
 import { defineConfig } from "vite";
 
@@ -22,7 +21,6 @@ const obsidianExternals = [
 export default defineConfig({
   plugins: [
     vue(),
-    tailwindcss(),
   ],
   build: {
     lib: {
