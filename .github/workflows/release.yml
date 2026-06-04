@@ -2,8 +2,8 @@ name: Release
 
 on:
   push:
-    branches:
-      - main
+    tags:
+      - "v*"
 
 permissions:
   contents: write
@@ -38,61 +38,19 @@ jobs:
       - name: Build
         run: pnpm run build
 
-      - name: Prepare release
-        id: release
-        shell: bash
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          VERSION="$(node -p "require('./manifest.json').version")"
-          TAG="v${VERSION}"
-
-          if gh release view "${TAG}" >/dev/null 2>&1; then
-            echo "Release ${TAG} already exists; skipping publish."
-            echo "publish=false" >> "$GITHUB_OUTPUT"
-          else
-            echo "publish=true" >> "$GITHUB_OUTPUT"
-          fi
-
-          if git rev-parse "${TAG}" >/dev/null 2>&1; then
-            echo "tag_exists=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "tag_exists=false" >> "$GITHUB_OUTPUT"
-          fi
-
-          echo "tag=${TAG}" >> "$GITHUB_OUTPUT"
-          echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
-
       - name: Validate release files
-        if: steps.release.outputs.publish == 'true'
-        env:
-          GITHUB_REF_NAME: ${{ steps.release.outputs.tag }}
         run: pnpm run release:check
 
       - name: Stage release assets
-        if: steps.release.outputs.publish == 'true'
         run: |
           mkdir -p release
           cp manifest.json release/manifest.json
           cp dist/main.js release/main.js
           cp dist/main.css release/styles.css
 
-      - name: Create tag
-        if: steps.release.outputs.publish == 'true' && steps.release.outputs.tag_exists == 'false'
-        env:
-          TAG: ${{ steps.release.outputs.tag }}
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git tag "$TAG"
-          git push origin "$TAG"
-
       - name: Publish GitHub release
-        if: steps.release.outputs.publish == 'true'
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ steps.release.outputs.tag }}
-          name: Obsync ${{ steps.release.outputs.version }}
           files: |
             release/manifest.json
             release/main.js
