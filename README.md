@@ -76,3 +76,27 @@ pnpm install-plugin "/path/to/your-vault"
 ```text
 obsync
 ```
+
+## 发布
+
+推送版本 tag 会触发 GitHub Actions 自动发布：
+
+```bash
+git tag v0.1.0
+git push origin v0.1.0
+```
+
+Release 会上传：
+
+```text
+manifest.json
+main.js
+styles.css
+```
+
+发布前可以本地检查：
+
+```bash
+pnpm run build
+pnpm run release:check
+```
