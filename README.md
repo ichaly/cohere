@@ -43,8 +43,32 @@ pnpm
 构建产物：
 
 ```text
-main.js
-styles.css
+dist/main.js
+dist/main.css
+```
+
+安装到 Obsidian 时，需要复制：
+
+```text
+manifest.json
+dist/main.js
+dist/main.css
+```
+
+到目标 vault 的插件目录，并把 `dist/main.css` 放置为 Obsidian 识别的 `styles.css`：
+
+```text
+<vault>/.obsidian/plugins/obsync/
+  manifest.json
+  main.js
+  styles.css
+```
+
+也可以使用安装脚本：
+
+```bash
+pnpm run build
+pnpm install-plugin "/path/to/your-vault"
 ```
 
 ## 插件 ID

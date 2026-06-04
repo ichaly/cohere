@@ -1,6 +1,4 @@
 node_modules/
 dist/
-/main.js
-/styles.css
 *.hot-update.*
 .DS_Store

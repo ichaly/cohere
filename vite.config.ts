@@ -1,4 +1,3 @@
-import { copyFileSync, existsSync } from "node:fs";
 import { builtinModules } from "node:module";
 import tailwindcss from "@tailwindcss/vite";
 import vue from "@vitejs/plugin-vue";
@@ -24,17 +23,6 @@ export default defineConfig({
   plugins: [
     vue(),
     tailwindcss(),
-    {
-      name: "copy-obsidian-plugin-bundle",
-      closeBundle() {
-        if (existsSync("dist/main.js")) {
-          copyFileSync("dist/main.js", "main.js");
-        }
-        if (existsSync("dist/main.css")) {
-          copyFileSync("dist/main.css", "styles.css");
-        }
-      },
-    },
   ],
   build: {
     lib: {

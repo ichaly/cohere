@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "vite build --watch",
     "build": "tsc --noEmit --skipLibCheck && vite build",
+    "install-plugin": "node scripts/install-plugin.mjs",
     "test": "vitest run"
   },
   "keywords": [
