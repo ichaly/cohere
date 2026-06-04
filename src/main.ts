@@ -3,7 +3,7 @@ import { createApp, reactive, type App as VueApp } from "vue";
 import { createRandomId, createVaultId, normalizeKey } from "./core/ids";
 import SettingsApp from "./settings/SettingsApp.vue";
 import "./styles.scss";
-import { syncOnce, type LocalSyncState, type VaultIO } from "./sync/engine";
+import { releaseDeletedContent, syncOnce, type LocalSyncState, type VaultIO } from "./sync/engine";
 import { S3ObjectStore } from "./store/s3";
 
 declare const require: ((id: string) => unknown) | undefined;
@@ -42,7 +42,7 @@ const DEFAULT_SETTINGS: ObsyncSettings = {
   region: "",
   accessKeyId: "",
   secretAccessKey: "",
-  rootPrefix: "obsync/v1",
+  rootPrefix: "obsync/v2",
   accountKey: "default",
   vaultKey: "",
   vaultId: "",
@@ -91,6 +91,14 @@ export default class ObsyncPlugin extends Plugin {
       },
     });
 
+    this.addCommand({
+      id: "release-deleted-content",
+      name: "释放已删除内容",
+      callback: async () => {
+        await this.releaseDeletedContentNow();
+      },
+    });
+
     this.addSettingTab(new ObsyncSettingTab(this.app, this));
     this.registerAutoSyncTriggers();
   }
@@ -104,38 +112,13 @@ export default class ObsyncPlugin extends Plugin {
     const syncingNotice = new Notice("Obsync 正在同步...", 0);
 
     try {
-      const store = new S3ObjectStore({
-        endpoint: this.settings.endpoint,
-        bucket: this.settings.bucket,
-        region: this.settings.region || "auto",
-        accessKeyId: this.settings.accessKeyId,
-        secretAccessKey: this.settings.secretAccessKey,
-        rootPrefix: this.settings.rootPrefix,
-        vaultId: this.settings.vaultId,
-        deviceId: this.settings.deviceId,
-        now: () => Date.now(),
-        request: async (request) => {
-          const { host: _host, ...headers } = request.headers;
-          const response = await requestUrl({
-            url: request.url,
-            method: request.method,
-            headers,
-            body: request.body,
-            throw: false,
-          });
-
-          return {
-            status: response.status,
-            text: response.text,
-            arrayBuffer: response.arrayBuffer,
-          };
-        },
-      });
+      const store = this.createObjectStore();
       const result = await syncOnce({
         vault: new ObsidianVaultIO(this.app),
         store,
         state: this.settings.syncState,
         deviceName: this.settings.deviceName || this.settings.deviceId,
+        deviceId: this.settings.deviceId,
         now: () => Date.now(),
       });
 
@@ -230,12 +213,82 @@ export default class ObsyncPlugin extends Plugin {
     return Boolean(this.settings.endpoint && this.settings.bucket && this.settings.accessKeyId && this.settings.secretAccessKey);
   }
 
+  async releaseDeletedContentNow(): Promise<void> {
+    if (!this.hasConnectionSettings()) {
+      new Notice("请先填写端点、Bucket、Access Key ID 和 Secret Access Key。");
+      return;
+    }
+
+    const notice = new Notice("Obsync 正在释放已删除内容...", 0);
+
+    try {
+      const store = this.createObjectStore();
+      const result = await releaseDeletedContent({ store, now: () => Date.now() });
+      notice.hide();
+
+      if (result.locked) {
+        new Notice("另一台设备正在同步，本次释放空间已跳过。");
+        return;
+      }
+
+      this.pruneLocalDeletedState();
+      await this.saveSettings();
+      new Notice(`Obsync 已释放：清理删除记录 ${result.deletedTombstones}，删除 Blob ${result.deletedBlobs}。`);
+    } catch (error) {
+      notice.hide();
+      const message = error instanceof Error ? error.message : String(error);
+      new Notice(`释放已删除内容失败：${message}`);
+    }
+  }
+
+  private createObjectStore(): S3ObjectStore {
+    return new S3ObjectStore({
+      endpoint: this.settings.endpoint,
+      bucket: this.settings.bucket,
+      region: this.settings.region || "auto",
+      accessKeyId: this.settings.accessKeyId,
+      secretAccessKey: this.settings.secretAccessKey,
+      rootPrefix: this.settings.rootPrefix,
+      vaultId: this.settings.vaultId,
+      deviceId: this.settings.deviceId,
+      now: () => Date.now(),
+      request: async (request) => {
+        const { host: _host, ...headers } = request.headers;
+        const response = await requestUrl({
+          url: request.url,
+          method: request.method,
+          headers,
+          body: request.body,
+          throw: false,
+        });
+
+        return {
+          status: response.status,
+          text: response.text,
+          arrayBuffer: response.arrayBuffer,
+        };
+      },
+    });
+  }
+
+  private pruneLocalDeletedState(): void {
+    for (const [path, fileState] of Object.entries(this.settings.syncState.files)) {
+      if (fileState.deleted) {
+        delete this.settings.syncState.files[path];
+      }
+    }
+  }
+
   async loadSettings(): Promise<void> {
     const loaded = await this.loadData();
     this.settings = Object.assign({}, DEFAULT_SETTINGS, loaded);
 
     if (!this.settings.vaultKey) {
       this.settings.vaultKey = normalizeKey(this.app.vault.getName());
+    }
+
+    if (!loaded?.rootPrefix || loaded.rootPrefix === "obsync/v1") {
+      this.settings.rootPrefix = "obsync/v2";
     }
 
     if (!this.settings.deviceId) {
@@ -503,6 +556,9 @@ class ObsyncSettingTab extends PluginSettingTab {
           const message = error instanceof Error ? error.message : String(error);
           new Notice(`导入连接配置失败：${message}`);
         }
+      },
+      onReleaseDeletedContent: async () => {
+        await this.plugin.releaseDeletedContentNow();
       },
     });
     this.vueApp.mount(mountEl);

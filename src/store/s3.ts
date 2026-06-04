@@ -96,6 +96,28 @@ export class S3ObjectStore implements ObjectStore {
     assertOk(response.status, `delete object ${key}`);
   }
 
+  async listObjectKeys(prefix: string): Promise<string[]> {
+    const resolvedPrefix = this.resolveKey(prefix);
+    const keys: string[] = [];
+    let continuationToken: string | undefined;
+
+    do {
+      const response = await this.request("GET", "", undefined, {
+        "list-type": "2",
+        prefix: resolvedPrefix,
+        ...(continuationToken ? { "continuation-token": continuationToken } : {}),
+      });
+      assertOk(response.status, `list objects ${prefix}`);
+
+      keys.push(...parseListBucketKeys(response.text));
+      continuationToken = readListContinuationToken(response.text);
+    } while (continuationToken);
+
+    return keys
+      .filter((key) => key.startsWith(`${this.layout.vaultPrefix}/`))
+      .map((key) => key.slice(this.layout.vaultPrefix.length + 1));
+  }
+
   private resolveKey(key: string): string {
     if (key === "manifest.json" || key.startsWith("locks/") || key.startsWith("meta/")) {
       return `${this.layout.vaultPrefix}/${key}`;
@@ -104,8 +126,8 @@ export class S3ObjectStore implements ObjectStore {
     return `${this.layout.vaultPrefix}/${key}`;
   }
 
-  private async request(method: string, key: string, body?: Uint8Array): Promise<HttpResponse> {
-    const url = createObjectUrl(this.options.endpoint, this.options.bucket, key);
+  private async request(method: string, key: string, body?: Uint8Array, query?: Record<string, string>): Promise<HttpResponse> {
+    const url = createObjectUrl(this.options.endpoint, this.options.bucket, key, query);
     const bodyBytes = body ?? new Uint8Array();
     const headers = await createSignedHeaders({
       method,
@@ -126,9 +148,11 @@ export class S3ObjectStore implements ObjectStore {
   }
 }
 
-function createObjectUrl(endpoint: string, bucket: string, key: string): string {
+function createObjectUrl(endpoint: string, bucket: string, key: string, query?: Record<string, string>): string {
   const base = endpoint.replace(/\/+$/g, "");
-  return `${base}/${encodePathPart(bucket)}/${encodeKey(key)}`;
+  const path = key ? `${encodePathPart(bucket)}/${encodeKey(key)}` : encodePathPart(bucket);
+  const search = query ? `?${new URLSearchParams(query).toString()}` : "";
+  return `${base}/${path}${search}`;
 }
 
 function encodeKey(key: string): string {
@@ -165,7 +189,7 @@ async function createSignedHeaders(input: {
   const canonicalRequest = [
     input.method.toUpperCase(),
     url.pathname,
-    url.searchParams.toString(),
+    createCanonicalQueryString(url),
     canonicalHeaders,
     signedHeaders,
     bodyHash,
@@ -210,6 +234,19 @@ function formatAmzDate(timestamp: number): string {
   return new Date(timestamp).toISOString().replace(/[:-]|\.\d{3}/g, "");
 }
 
+function createCanonicalQueryString(url: URL): string {
+  return Array.from(url.searchParams.entries())
+    .sort(([leftKey, leftValue], [rightKey, rightValue]) => {
+      if (leftKey === rightKey) {
+        return leftValue.localeCompare(rightValue);
+      }
+
+      return leftKey.localeCompare(rightKey);
+    })
+    .map(([key, value]) => `${encodeURIComponent(key)}=${encodeURIComponent(value)}`)
+    .join("&");
+}
+
 function toArrayBuffer(bytes: Uint8Array): ArrayBuffer {
   const copy = new Uint8Array(bytes.byteLength);
   copy.set(bytes);
@@ -222,6 +259,36 @@ function safeParseJson(value: string): unknown {
   } catch {
     return null;
   }
+}
+
+function parseListBucketKeys(xml: string): string[] {
+  const keys: string[] = [];
+  const keyPattern = /<Key>([^<]*)<\/Key>/g;
+  let match: RegExpExecArray | null;
+
+  while ((match = keyPattern.exec(xml)) !== null) {
+    keys.push(decodeXml(match[1]));
+  }
+
+  return keys;
+}
+
+function readListContinuationToken(xml: string): string | undefined {
+  if (!/<IsTruncated>true<\/IsTruncated>/i.test(xml)) {
+    return undefined;
+  }
+
+  const match = xml.match(/<NextContinuationToken>([^<]*)<\/NextContinuationToken>/);
+  return match ? decodeXml(match[1]) : undefined;
+}
+
+function decodeXml(value: string): string {
+  return value
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&quot;/g, "\"")
+    .replace(/&apos;/g, "'")
+    .replace(/&amp;/g, "&");
 }
 
 function assertOk(status: number, operation: string): void {

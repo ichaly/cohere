@@ -28,6 +28,7 @@ const emit = defineEmits<{
   copyDeviceId: [];
   copyConnectionConfig: [];
   pasteConnectionConfig: [];
+  releaseDeletedContent: [];
 }>();
 
 const showSecretAccessKey = ref(false);
@@ -105,8 +106,8 @@ watchEffect(() => {
         <div class="obsync-control">
           <input
             :value="props.settings.rootPrefix"
-            placeholder="obsync/v1"
-            @input="emit('update', { rootPrefix: ($event.target as HTMLInputElement).value.trim() || 'obsync/v1' })"
+            placeholder="obsync/v2"
+            @input="emit('update', { rootPrefix: ($event.target as HTMLInputElement).value.trim() || 'obsync/v2' })"
           />
         </div>
       </div>
@@ -147,6 +148,20 @@ watchEffect(() => {
               @click="showSecretAccessKey = !showSecretAccessKey"
             ></button>
           </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="obsync-card">
+      <div class="obsync-row">
+        <div class="obsync-row-copy">
+          <h3>释放空间</h3>
+          <p>清理已删除文件的远端记录和不再引用的 Blob。</p>
+        </div>
+        <div class="obsync-control">
+          <button type="button" class="obsync-secondary" @click="emit('releaseDeletedContent')">
+            释放已删除内容
+          </button>
         </div>
       </div>
     </section>
