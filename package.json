@@ -1,0 +1,27 @@
+{
+  "name": "obsync",
+  "version": "0.1.0",
+  "description": "Obsidian plugin for OSS / S3-compatible vault sync.",
+  "main": "main.js",
+  "scripts": {
+    "dev": "node esbuild.config.mjs watch",
+    "build": "tsc -noEmit -skipLibCheck && node esbuild.config.mjs production"
+  },
+  "keywords": [
+    "obsidian",
+    "obsidian-plugin",
+    "sync",
+    "oss",
+    "s3"
+  ],
+  "author": "Chaly",
+  "license": "MIT",
+  "devDependencies": {
+    "@types/node": "^24.10.1",
+    "builtin-modules": "^5.0.0",
+    "esbuild": "^0.27.0",
+    "obsidian": "^1.8.7",
+    "typescript": "^5.9.3"
+  }
+}
+

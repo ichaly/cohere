@@ -1,0 +1,11 @@
+{
+  "id": "obsync",
+  "name": "Obsync",
+  "version": "0.1.0",
+  "minAppVersion": "1.5.0",
+  "description": "Sync Obsidian vault files through OSS / S3-compatible object storage.",
+  "author": "Chaly",
+  "authorUrl": "https://gitee.com/ichaly",
+  "isDesktopOnly": false
+}
+

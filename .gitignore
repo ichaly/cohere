@@ -1,0 +1,6 @@
+node_modules/
+main.js
+styles.css
+*.hot-update.*
+.DS_Store
+
