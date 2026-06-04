@@ -3,6 +3,8 @@ type ObsyncSettings = {
   endpoint: string;
   bucket: string;
   region: string;
+  accessKeyId: string;
+  secretAccessKey: string;
   rootPrefix: string;
   accountKey: string;
   vaultKey: string;
@@ -60,11 +62,39 @@ const emit = defineEmits<{
       </label>
 
       <label class="obsync-field">
+        <span>Region</span>
+        <input
+          :value="props.settings.region"
+          placeholder="auto"
+          @input="emit('update', { region: ($event.target as HTMLInputElement).value.trim() })"
+        />
+      </label>
+
+      <label class="obsync-field">
         <span>Root prefix</span>
         <input
           :value="props.settings.rootPrefix"
           placeholder="obsync/v1"
           @input="emit('update', { rootPrefix: ($event.target as HTMLInputElement).value.trim() || 'obsync/v1' })"
+        />
+      </label>
+
+      <label class="obsync-field">
+        <span>Access key ID</span>
+        <input
+          :value="props.settings.accessKeyId"
+          autocomplete="off"
+          @input="emit('update', { accessKeyId: ($event.target as HTMLInputElement).value.trim() })"
+        />
+      </label>
+
+      <label class="obsync-field">
+        <span>Secret access key</span>
+        <input
+          type="password"
+          :value="props.settings.secretAccessKey"
+          autocomplete="off"
+          @input="emit('update', { secretAccessKey: ($event.target as HTMLInputElement).value })"
         />
       </label>
     </section>
@@ -145,4 +175,3 @@ const emit = defineEmits<{
     </section>
   </main>
 </template>
-
