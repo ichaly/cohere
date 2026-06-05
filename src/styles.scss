@@ -290,6 +290,7 @@
 @container (max-width: 640px) {
   .obsync-header {
     @apply block;
+    padding-top: max(2rem, env(safe-area-inset-top, 0px));
   }
 
   .obsync-card {
