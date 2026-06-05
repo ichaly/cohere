@@ -1,27 +1,49 @@
 # Obsync
 
-Obsync 是一个 Obsidian 同步插件，目标是通过 OSS / S3 兼容对象存储在多端同步 vault 文件。
+Obsync 是一个 Obsidian 社区插件，用于通过 OSS / S3 兼容对象存储同步当前 vault 文件。
 
-当前仓库已经完成插件基础骨架和 MVP 设计文档。第一阶段实现目标是一个简单可靠的同步模型：
+![Obsync 设置示例](docs/assets/settings-s3-endpoint-sanitized.png)
 
-```text
-manifest.json + files/<path> + locks/sync.lock
-```
+## 当前能力
 
-当前已实现：
-
-```text
-vaultId / deviceId 生成
-连接配置复制
-本地文件扫描
-manifest 冲突判断
-S3-compatible SigV4 对象存储 adapter
-手动同步命令
-```
+- 基于 `vaultId` 隔离多笔记仓库
+- 基于 `deviceId` 区分多设备
+- 支持手动同步和自动同步
+- 支持 S3 Signature V4 对象存储
+- 支持冲突文件保留
+- 支持删除同步和已删除内容清理
+- 支持复制 / 导入连接配置
+- 可选择导出完整配置，包含 Access Key 和 Secret
 
 详细方案见：[docs/obsidian-oss-sync-mvp.md](docs/obsidian-oss-sync-mvp.md)
 
-## 开发
+## 对象存储端点
+
+同步必须填写服务商的 **S3 API Endpoint**，不要填写自定义访问域名、CDN 域名或私有下载域名。
+
+自定义域名通常用于浏览器访问、公开文件下载或分享链接；同步需要的是 `PUT`、`GET`、`DELETE`、`ListObjects` 和 S3 Signature V4，应使用对象存储服务商提供的 S3 API 入口。
+
+### Cloudflare R2
+
+```text
+Endpoint: https://<account-id>.r2.cloudflarestorage.com
+Region: auto
+Bucket: ideabase
+```
+
+Cloudflare R2 同步不需要绑定自定义域名。
+
+### 七牛云
+
+```text
+Endpoint: https://s3.cn-north-1.qiniucs.com
+Region: cn-north-1
+Bucket: ideabase
+```
+
+七牛云同步不使用自定义下载域名，例如 `http://oss.example.com`。这类域名可能返回 `download token not specified`，它不是 S3 API endpoint。
+
+## 本地开发
 
 ```bash
 pnpm install
@@ -29,7 +51,7 @@ pnpm test
 pnpm run build
 ```
 
-构建栈：
+技术栈：
 
 ```text
 Vite 8
@@ -46,6 +68,8 @@ pnpm
 dist/main.js
 dist/main.css
 ```
+
+## 本地安装
 
 安装到 Obsidian 时，需要复制：
 

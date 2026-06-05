@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1440" height="920" viewBox="0 0 1440 920">
+  <rect width="1440" height="920" rx="36" fill="#f7f7f8"/>
+  <rect x="72" y="70" width="1296" height="780" rx="18" fill="#f1f1f3"/>
+
+  <text x="126" y="136" font-family="-apple-system,BlinkMacSystemFont,Segoe UI,sans-serif" font-size="34" font-weight="700" fill="#222">Obsync 设置</text>
+  <text x="126" y="188" font-family="-apple-system,BlinkMacSystemFont,Segoe UI,sans-serif" font-size="25" fill="#5f5f68">通过对象存储同步当前 Obsidian 仓库。</text>
+
+  <rect x="126" y="240" width="1188" height="134" rx="14" fill="#ffffff" stroke="#d9d9de"/>
+  <text x="166" y="295" font-family="-apple-system,BlinkMacSystemFont,Segoe UI,sans-serif" font-size="27" font-weight="700" fill="#25252b">S3 API Endpoint</text>
+  <text x="166" y="336" font-family="-apple-system,BlinkMacSystemFont,Segoe UI,sans-serif" font-size="22" fill="#66666f">用于对象存储读写同步，不是自定义访问域名或 CDN 域名。</text>
+  <text x="800" y="310" font-family="SFMono-Regular,Menlo,Consolas,monospace" font-size="22" fill="#333">https://s3.cn-north-1.qiniucs.com</text>
+
+  <rect x="126" y="392" width="1188" height="114" rx="14" fill="#ffffff" stroke="#d9d9de"/>
+  <text x="166" y="447" font-family="-apple-system,BlinkMacSystemFont,Segoe UI,sans-serif" font-size="27" font-weight="700" fill="#25252b">Bucket</text>
+  <text x="166" y="486" font-family="-apple-system,BlinkMacSystemFont,Segoe UI,sans-serif" font-size="22" fill="#66666f">用于保存同步文件的对象存储桶。</text>
+  <text x="800" y="464" font-family="SFMono-Regular,Menlo,Consolas,monospace" font-size="22" fill="#333">ideabase</text>
+
+  <rect x="126" y="524" width="1188" height="114" rx="14" fill="#ffffff" stroke="#d9d9de"/>
+  <text x="166" y="579" font-family="-apple-system,BlinkMacSystemFont,Segoe UI,sans-serif" font-size="27" font-weight="700" fill="#25252b">Region</text>
+  <text x="166" y="618" font-family="-apple-system,BlinkMacSystemFont,Segoe UI,sans-serif" font-size="22" fill="#66666f">R2 使用 auto，七牛按 bucket 所在区域填写。</text>
+  <text x="800" y="596" font-family="SFMono-Regular,Menlo,Consolas,monospace" font-size="22" fill="#333">cn-north-1</text>
+
+  <rect x="126" y="670" width="1188" height="130" rx="14" fill="#ffffff" stroke="#d9d9de"/>
+  <text x="166" y="727" font-family="-apple-system,BlinkMacSystemFont,Segoe UI,sans-serif" font-size="27" font-weight="700" fill="#25252b">连接配置</text>
+  <text x="166" y="766" font-family="-apple-system,BlinkMacSystemFont,Segoe UI,sans-serif" font-size="22" fill="#66666f">复制到另一台设备导入。默认不包含 Access Key 和 Secret。</text>
+
+  <text x="1055" y="735" font-family="-apple-system,BlinkMacSystemFont,Segoe UI,sans-serif" font-size="22" font-weight="600" fill="#66666f">包含密钥</text>
+  <rect x="1168" y="704" width="82" height="44" rx="22" fill="#dfdfe3"/>
+  <circle cx="1191" cy="726" r="17" fill="#ffffff"/>
+
+  <rect x="166" y="812" width="1084" height="54" rx="9" fill="#fbfbfc" stroke="#d8d8de"/>
+  <text x="194" y="847" font-family="SFMono-Regular,Menlo,Consolas,monospace" font-size="19" fill="#4b4b55">{ "endpoint": "https://s3.cn-north-1.qiniucs.com", "accessKeyId": "****", "secretAccessKey": "****" }</text>
+</svg>
