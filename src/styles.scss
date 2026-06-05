@@ -328,6 +328,10 @@
     @apply self-start;
   }
 
+  .obsync-row:not(.obsync-toggle-row) .obsync-inline-switch .obsync-switch {
+    @apply mt-0;
+  }
+
   .obsync-control,
   .obsync-control-wide,
   .obsync-readonly {
