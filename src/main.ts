@@ -153,7 +153,7 @@ export default class ObsyncPlugin extends Plugin {
         }
 
         if (trigger === "manual") {
-          this.showNotice(`Obsync 同步完成：上传 ${result.uploaded}，下载 ${result.downloaded}，冲突 ${result.conflicts}。`);
+          this.showNotice("Obsync 同步完成。");
         }
       }, {
         notifyMissingConfig: trigger === "manual",
