@@ -81,6 +81,22 @@ describe("auto sync scheduling", () => {
     expect(plugin.syncNow).toHaveBeenCalledTimes(1);
   });
 
+  test("keeps file-event suppression active briefly after sync finishes", async () => {
+    const plugin = createPlugin();
+
+    plugin.startFileEventSuppression();
+    expect(plugin.suppressFileSyncEvents).toBe(true);
+
+    plugin.finishFileEventSuppression();
+    expect(plugin.suppressFileSyncEvents).toBe(true);
+
+    await vi.advanceTimersByTimeAsync(999);
+    expect(plugin.suppressFileSyncEvents).toBe(true);
+
+    await vi.advanceTimersByTimeAsync(1);
+    expect(plugin.suppressFileSyncEvents).toBe(false);
+  });
+
   test("runs one follow-up sync when triggered during an active sync", async () => {
     const plugin = createPlugin();
     let finishSync: (() => void) | undefined;
@@ -236,6 +252,9 @@ type TestPlugin = {
   saveSettings: ReturnType<typeof vi.fn<() => Promise<void>>>;
   queueAutoSync: (delayMs?: number) => void;
   runAutoSync: () => Promise<void>;
+  startFileEventSuppression: () => void;
+  finishFileEventSuppression: () => void;
+  suppressFileSyncEvents: boolean;
   syncNow: ReturnType<typeof vi.fn<() => Promise<void>>>;
 };
 

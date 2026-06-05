@@ -56,12 +56,19 @@ const DEFAULT_SETTINGS: ObsyncSettings = {
 };
 
 const AUTO_SYNC_DEBOUNCE_MS = 2_000;
+const FILE_EVENT_SUPPRESSION_MS = 1_000;
+
+type SyncTrigger = "manual" | "auto";
 
 export default class ObsyncPlugin extends Plugin {
   settings: ObsyncSettings = DEFAULT_SETTINGS;
   private autoSyncTimer: number | null = null;
   private autoSyncRunning = false;
   private autoSyncQueued = false;
+  private syncRunning = false;
+  private suppressFileSyncEvents = false;
+  private suppressFileSyncTimer: number | null = null;
+  private activeNotice: Notice | null = null;
   private statusBarItem: HTMLElement | null = null;
 
   async onload(): Promise<void> {
@@ -74,12 +81,12 @@ export default class ObsyncPlugin extends Plugin {
       id: "manual-sync",
       name: "立即同步",
       callback: async () => {
-        await this.syncNow();
+        await this.syncNow("manual");
       },
     });
 
     const syncRibbonIcon = this.addRibbonIcon("refresh-cw", "Obsync 立即同步", async () => {
-      await this.syncNow();
+      await this.syncNow("manual");
     });
     syncRibbonIcon.classList.add("obsync-ribbon-sync");
     this.app.workspace.onLayoutReady(() => {
@@ -107,27 +114,51 @@ export default class ObsyncPlugin extends Plugin {
     this.registerAutoSyncTriggers();
   }
 
-  async syncNow(): Promise<void> {
-    await this.runConfiguredOperation("同步中...", "Obsync 同步失败", async () => {
-      const store = this.createObjectStore();
-      const result = await syncOnce({
-        vault: new ObsidianVaultIO(this.app),
-        store,
-        state: this.settings.syncState,
-        deviceName: this.settings.deviceName || this.settings.deviceId,
-        deviceId: this.settings.deviceId,
-        now: () => Date.now(),
-      });
+  async syncNow(trigger: SyncTrigger = "manual"): Promise<void> {
+    if (this.syncRunning) {
+      this.autoSyncQueued = true;
 
-      await this.saveSettings();
-
-      if (result.locked) {
-        new Notice("另一台设备正在同步，本次已跳过。");
-        return;
+      if (trigger === "manual") {
+        this.showNotice("Obsync 正在同步，稍后会再同步一次。");
       }
 
-      new Notice(`Obsync 同步完成：上传 ${result.uploaded}，下载 ${result.downloaded}，冲突 ${result.conflicts}。`);
-    });
+      return;
+    }
+
+    this.syncRunning = true;
+    this.startFileEventSuppression();
+
+    try {
+      await this.runConfiguredOperation("同步中...", "Obsync 同步失败", async () => {
+        const store = this.createObjectStore();
+        const result = await syncOnce({
+          vault: new ObsidianVaultIO(this.app),
+          store,
+          state: this.settings.syncState,
+          deviceName: this.settings.deviceName || this.settings.deviceId,
+          deviceId: this.settings.deviceId,
+          now: () => Date.now(),
+        });
+
+        await this.saveSettings();
+
+        if (result.locked) {
+          if (trigger === "manual") {
+            this.showNotice("另一台设备正在同步，本次已跳过。");
+          }
+          return;
+        }
+
+        if (trigger === "manual") {
+          this.showNotice(`Obsync 同步完成：上传 ${result.uploaded}，下载 ${result.downloaded}，冲突 ${result.conflicts}。`);
+        }
+      }, {
+        notifyMissingConfig: trigger === "manual",
+      });
+    } finally {
+      this.syncRunning = false;
+      this.finishFileEventSuppression();
+    }
   }
 
   private moveRibbonIconToBottom(iconEl: HTMLElement): void {
@@ -152,6 +183,10 @@ export default class ObsyncPlugin extends Plugin {
 
     const queueFileSync = (file: TAbstractFile) => {
       if (file instanceof TFile) {
+        if (this.suppressFileSyncEvents) {
+          return;
+        }
+
         this.queueAutoSync();
       }
     };
@@ -190,7 +225,7 @@ export default class ObsyncPlugin extends Plugin {
     this.autoSyncRunning = true;
 
     try {
-      await this.syncNow();
+      await this.syncNow("auto");
     } finally {
       this.autoSyncRunning = false;
 
@@ -210,19 +245,26 @@ export default class ObsyncPlugin extends Plugin {
       const result = await releaseDeletedContent({ store: this.createObjectStore(), now: () => Date.now() });
 
       if (result.locked) {
-        new Notice("另一台设备正在同步，本次释放空间已跳过。");
+        this.showNotice("另一台设备正在同步，本次释放空间已跳过。");
         return;
       }
 
       this.pruneLocalDeletedState();
       await this.saveSettings();
-      new Notice(`Obsync 已释放：清理删除记录 ${result.deletedTombstones}，删除 Blob ${result.deletedBlobs}。`);
+      this.showNotice(`Obsync 已释放：清理删除记录 ${result.deletedTombstones}，删除 Blob ${result.deletedBlobs}。`);
     });
   }
 
-  private async runConfiguredOperation(progressText: string, failurePrefix: string, operation: () => Promise<void>): Promise<void> {
+  private async runConfiguredOperation(
+    progressText: string,
+    failurePrefix: string,
+    operation: () => Promise<void>,
+    options: { notifyMissingConfig?: boolean } = {},
+  ): Promise<void> {
     if (!this.hasConnectionSettings()) {
-      new Notice("请先填写端点、Bucket、Access Key ID 和 Secret Access Key。");
+      if (options.notifyMissingConfig ?? true) {
+        this.showNotice("请先填写端点、Bucket、Access Key ID 和 Secret Access Key。");
+      }
       return;
     }
 
@@ -232,10 +274,35 @@ export default class ObsyncPlugin extends Plugin {
       await operation();
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
-      new Notice(`${failurePrefix}：${message}`);
+      this.showNotice(`${failurePrefix}：${message}`);
     } finally {
       this.clearOperationStatus();
     }
+  }
+
+  private startFileEventSuppression(): void {
+    if (this.suppressFileSyncTimer !== null) {
+      window.clearTimeout(this.suppressFileSyncTimer);
+      this.suppressFileSyncTimer = null;
+    }
+
+    this.suppressFileSyncEvents = true;
+  }
+
+  private finishFileEventSuppression(): void {
+    if (this.suppressFileSyncTimer !== null) {
+      window.clearTimeout(this.suppressFileSyncTimer);
+    }
+
+    this.suppressFileSyncTimer = window.setTimeout(() => {
+      this.suppressFileSyncTimer = null;
+      this.suppressFileSyncEvents = false;
+    }, FILE_EVENT_SUPPRESSION_MS);
+  }
+
+  private showNotice(message: string): void {
+    this.activeNotice?.hide();
+    this.activeNotice = new Notice(message);
   }
 
   private setOperationStatus(text: string): void {
