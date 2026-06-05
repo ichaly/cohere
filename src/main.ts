@@ -378,6 +378,18 @@ function getCurrentDeviceName(deviceId: string): string {
     return `${Platform.isTablet ? "Android Tablet" : "Android Phone"} ${suffix}`;
   }
 
+  if (Platform.isMacOS) {
+    return `Mac Desktop ${suffix}`;
+  }
+
+  if (Platform.isWin) {
+    return `Windows Desktop ${suffix}`;
+  }
+
+  if (Platform.isLinux) {
+    return `Linux Desktop ${suffix}`;
+  }
+
   return `Desktop ${suffix}`;
 }
 

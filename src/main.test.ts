@@ -9,7 +9,10 @@ vi.mock("obsidian", () => ({
   Platform: {
     isAndroidApp: false,
     isIosApp: false,
+    isLinux: false,
+    isMacOS: true,
     isTablet: false,
+    isWin: false,
   },
   Plugin: class {},
   PluginSettingTab: class {},
@@ -194,7 +197,7 @@ describe("device identity settings", () => {
 
     await plugin.updateSettings({ deviceName: "" });
 
-    expect(plugin.settings.deviceName).toBe("Desktop KS5A");
+    expect(plugin.settings.deviceName).toBe("Mac Desktop KS5A");
     expect(plugin.saveSettings).toHaveBeenCalledTimes(1);
   });
 });
