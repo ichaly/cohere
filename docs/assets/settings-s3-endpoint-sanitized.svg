@@ -7,7 +7,7 @@
 
   <rect x="126" y="240" width="1188" height="134" rx="14" fill="#ffffff" stroke="#d9d9de"/>
   <text x="166" y="295" font-family="-apple-system,BlinkMacSystemFont,Segoe UI,sans-serif" font-size="27" font-weight="700" fill="#25252b">S3 API Endpoint</text>
-  <text x="166" y="336" font-family="-apple-system,BlinkMacSystemFont,Segoe UI,sans-serif" font-size="22" fill="#66666f">用于对象存储读写同步，不是自定义访问域名或 CDN 域名。</text>
+  <text x="166" y="336" font-family="-apple-system,BlinkMacSystemFont,Segoe UI,sans-serif" font-size="22" fill="#66666f">填写服务商提供的 S3 API 地址格式。</text>
   <text x="800" y="310" font-family="SFMono-Regular,Menlo,Consolas,monospace" font-size="22" fill="#333">https://s3.cn-north-1.qiniucs.com</text>
 
   <rect x="126" y="392" width="1188" height="114" rx="14" fill="#ffffff" stroke="#d9d9de"/>
