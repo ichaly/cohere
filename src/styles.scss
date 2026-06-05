@@ -95,8 +95,12 @@
 }
 
 .obsync-inline-switch {
-  @apply flex shrink-0 cursor-pointer items-center gap-2 self-center whitespace-nowrap text-sm font-medium leading-6;
+  @apply flex h-6 shrink-0 cursor-pointer items-center gap-2 self-center whitespace-nowrap text-sm font-medium leading-none;
   color: var(--text-muted);
+
+  > span:first-child {
+    @apply flex h-6 items-center;
+  }
 
   .obsync-switch {
     @apply mt-0;
