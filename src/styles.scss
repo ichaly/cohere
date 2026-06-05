@@ -321,14 +321,6 @@
     @apply items-start;
   }
 
-  .obsync-row-block .obsync-row-title {
-    @apply flex-col;
-  }
-
-  .obsync-row-block .obsync-inline-switch {
-    @apply self-start;
-  }
-
   .obsync-row:not(.obsync-toggle-row) .obsync-inline-switch .obsync-switch {
     @apply mt-0;
   }
@@ -356,8 +348,18 @@
     @apply mt-2;
   }
 
-  .obsync-row:not(.obsync-toggle-row) .obsync-switch {
+  .obsync-row:not(.obsync-toggle-row) > .obsync-switch {
     @apply mt-2;
+  }
+}
+
+.obsync-panel.is-mobile {
+  .obsync-row-block .obsync-row-title {
+    @apply flex-col;
+  }
+
+  .obsync-row-block .obsync-inline-switch {
+    @apply self-start;
   }
 }
 

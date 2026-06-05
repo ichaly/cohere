@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { setIcon } from "obsidian";
+import { Platform, setIcon } from "obsidian";
 import { computed, ref, watchEffect } from "vue";
 
 type ObsyncSettings = {
@@ -33,6 +33,7 @@ const emit = defineEmits<{
 
 const showSecretAccessKey = ref(false);
 const includeSecrets = ref(false);
+const isMobile = Platform.isMobile;
 const secretAccessKeyButton = ref<HTMLButtonElement | null>(null);
 const connectionConfigPreview = computed(() => {
   if (!includeSecrets.value) {
@@ -59,7 +60,7 @@ watchEffect(() => {
 </script>
 
 <template>
-  <main class="obsync-panel">
+  <main class="obsync-panel" :class="{ 'is-mobile': isMobile }">
     <header class="obsync-header">
       <div>
         <h2 class="obsync-title">Obsync 设置</h2>
