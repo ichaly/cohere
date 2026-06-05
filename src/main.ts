@@ -324,6 +324,9 @@ export default class ObsyncPlugin extends Plugin {
     Object.assign(this.settings, update);
     this.settings.accountKey = normalizeKey(this.settings.accountKey || "default");
     this.settings.vaultKey = normalizeKey(this.settings.vaultKey || this.app.vault.getName());
+    if (!this.settings.deviceName || this.settings.deviceName === "This device") {
+      this.settings.deviceName = getCurrentDeviceName(this.settings.deviceId);
+    }
     this.settings.vaultId = await createVaultId(this.settings.accountKey, this.settings.vaultKey);
     await this.saveSettings();
   }

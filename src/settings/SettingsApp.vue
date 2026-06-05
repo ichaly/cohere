@@ -230,7 +230,7 @@ watchEffect(() => {
         <div class="obsync-control">
         <input
           :value="props.settings.deviceName"
-          @input="emit('update', { deviceName: ($event.target as HTMLInputElement).value.trim() || 'This device' })"
+          @input="emit('update', { deviceName: ($event.target as HTMLInputElement).value.trim() })"
         />
         </div>
       </div>

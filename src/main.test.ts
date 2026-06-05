@@ -185,6 +185,20 @@ describe("connection config import and export", () => {
   });
 });
 
+describe("device identity settings", () => {
+  test("recomputes the default device name when the name is cleared", async () => {
+    const plugin = createPlugin({
+      deviceId: "dev_ABCDEFGHIJKLMNOPQRSTUVKS5A",
+      deviceName: "Custom name",
+    });
+
+    await plugin.updateSettings({ deviceName: "" });
+
+    expect(plugin.settings.deviceName).toBe("Desktop KS5A");
+    expect(plugin.saveSettings).toHaveBeenCalledTimes(1);
+  });
+});
+
 function createPlugin(settings: Partial<TestSettings> = {}): TestPlugin {
   const plugin = Object.create(ObsyncPlugin.prototype) as TestPlugin;
   plugin.app = { vault: { getName: () => "ichaly" } };
@@ -215,6 +229,7 @@ type TestPlugin = {
   settings: TestSettings;
   getConnectionConfig: () => Record<string, string | number>;
   importConnectionConfig: (text: string) => Promise<void>;
+  updateSettings: (update: Partial<TestSettings>) => Promise<void>;
   saveSettings: ReturnType<typeof vi.fn<() => Promise<void>>>;
   queueAutoSync: (delayMs?: number) => void;
   runAutoSync: () => Promise<void>;
