@@ -6,8 +6,6 @@ import "./styles.scss";
 import { releaseDeletedContent, syncOnce, type LocalSyncState, type VaultIO } from "./sync/engine";
 import { S3ObjectStore } from "./store/s3";
 
-declare const require: ((id: string) => unknown) | undefined;
-
 interface ObsyncSettings {
   endpoint: string;
   bucket: string;
@@ -356,19 +354,6 @@ export default class ObsyncPlugin extends Plugin {
 }
 
 function getCurrentDeviceName(deviceId: string): string {
-  try {
-    if (typeof require !== "function") {
-      return getPlatformDeviceName(deviceId);
-    }
-
-    const os = require("node:os") as { hostname?: () => string };
-    return os.hostname?.().trim() || getPlatformDeviceName(deviceId);
-  } catch {
-    return getPlatformDeviceName(deviceId);
-  }
-}
-
-function getPlatformDeviceName(deviceId: string): string {
   const suffix = getDeviceNameSuffix(deviceId);
 
   if (Platform.isIosApp) {
