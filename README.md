@@ -37,14 +37,6 @@ Region: <region>
 Bucket: <桶名称>
 ```
 
-示例：
-
-```text
-Endpoint: https://s3.cn-north-1.qiniucs.com
-Region: cn-north-1
-Bucket: ideabase
-```
-
 ## 本地开发
 
 ```bash
