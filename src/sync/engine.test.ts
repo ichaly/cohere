@@ -215,7 +215,7 @@ describe("sync engine", () => {
     expect(result.uploaded).toBe(0);
     expect(store.manifest.paths["notes/shared.md"]).toBeUndefined();
     expect(await staleDevice.readText("notes/shared.md")).toBe("");
-    expect(await staleDevice.readText("notes/shared.conflict.Phone.19700101-080003.md")).toBe("stale local");
+    expect(await staleDevice.readText("notes/shared.conflict.Phone.19700101-000003.md")).toBe("stale local");
   });
 
   test("stores uploaded content under a hash blob instead of the original path", async () => {
@@ -352,7 +352,7 @@ describe("sync engine", () => {
     expect(result.conflicts).toBe(1);
     expect(result.deletedLocal).toBe(1);
     expect(await vault.readText("notes/today.md")).toBe("");
-    expect(await vault.readText("notes/today.conflict.Mac.19700101-080003.md")).toBe("local changed");
+    expect(await vault.readText("notes/today.conflict.Mac.19700101-000003.md")).toBe("local changed");
     expect(state.files["notes/today.md"]?.deleted).toBe(true);
   });
 
@@ -375,7 +375,7 @@ describe("sync engine", () => {
     expect(result.uploaded).toBe(0);
     expect(store.manifest.paths["notes/today.md"]).toBeUndefined();
     expect(await vault.readText("notes/today.md")).toBe("");
-    expect(await vault.readText("notes/today.conflict.Mac.19700101-080003.md")).toBe("stale local");
+    expect(await vault.readText("notes/today.conflict.Mac.19700101-000003.md")).toBe("stale local");
   });
 
   test("keeps recent tombstones in the manifest", async () => {
@@ -550,7 +550,7 @@ describe("sync engine", () => {
 
     expect(result.conflicts).toBe(1);
     expect(await vault.readText("notes/today.md")).toBe("local-new");
-    expect(await vault.readText("notes/today.conflict.Mac.19700101-080004.md")).toBe("remote-new");
+    expect(await vault.readText("notes/today.conflict.Mac.19700101-000004.md")).toBe("remote-new");
   });
 
   test("does not create duplicate conflict copies after the same remote conflict was already recorded", async () => {
@@ -584,8 +584,8 @@ describe("sync engine", () => {
     expect(firstResult.conflicts).toBe(1);
     expect(secondResult.conflicts).toBe(0);
     expect(secondResult.uploaded).toBe(2);
-    expect(await vault.readText("notes/today.conflict.Mac.19700101-080003.md")).toBe("remote");
-    expect(await vault.readText("notes/today.conflict.Mac.19700101-080004.md")).toBe("");
+    expect(await vault.readText("notes/today.conflict.Mac.19700101-000003.md")).toBe("remote");
+    expect(await vault.readText("notes/today.conflict.Mac.19700101-000004.md")).toBe("");
     expect(store.manifest.paths["notes/today.md"]?.contentHash).toBe(await hashText("local"));
   });
 
@@ -673,7 +673,7 @@ describe("sync engine", () => {
 
     expect(result.conflicts).toBe(1);
     expect(await vault.readText("notes/today.md")).toBe("local");
-    expect(await vault.readText("notes/today.conflict.Mac.19700101-080002.md")).toBe("remote");
+    expect(await vault.readText("notes/today.conflict.Mac.19700101-000002.md")).toBe("remote");
   });
 });
 
