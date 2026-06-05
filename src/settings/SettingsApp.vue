@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { setIcon } from "obsidian";
-import { ref, watchEffect } from "vue";
+import { computed, ref, watchEffect } from "vue";
 
 type ObsyncSettings = {
   endpoint: string;
@@ -26,13 +26,25 @@ const props = defineProps<{
 const emit = defineEmits<{
   update: [update: Partial<ObsyncSettings>];
   copyDeviceId: [];
-  copyConnectionConfig: [];
+  copyConnectionConfig: [includeSecrets: boolean];
   pasteConnectionConfig: [];
   releaseDeletedContent: [];
 }>();
 
 const showSecretAccessKey = ref(false);
+const includeSecrets = ref(false);
 const secretAccessKeyButton = ref<HTMLButtonElement | null>(null);
+const connectionConfigPreview = computed(() => {
+  if (!includeSecrets.value) {
+    return props.connectionConfig;
+  }
+
+  return {
+    ...props.connectionConfig,
+    accessKeyId: props.settings.accessKeyId,
+    secretAccessKey: props.settings.secretAccessKey,
+  };
+});
 
 watchEffect(() => {
   const button = secretAccessKeyButton.value;
@@ -242,15 +254,33 @@ watchEffect(() => {
     <section class="obsync-card">
       <div class="obsync-row obsync-row-block">
         <div class="obsync-row-copy">
-          <h3>连接配置</h3>
-          <p>复制到另一台设备导入。这里不包含 Access Key 和 Secret。</p>
+          <div class="obsync-row-title">
+            <div>
+              <h3>连接配置</h3>
+              <p>
+                {{ includeSecrets ? "将包含 Access Key 和 Secret，仅用于导入自己的设备。" : "复制到另一台设备导入。默认不包含 Access Key 和 Secret。" }}
+              </p>
+            </div>
+
+            <label class="obsync-inline-switch">
+              <span>包含密钥</span>
+              <span class="obsync-switch">
+                <input
+                  type="checkbox"
+                  :checked="includeSecrets"
+                  @change="includeSecrets = ($event.target as HTMLInputElement).checked"
+                />
+                <span></span>
+              </span>
+            </label>
+          </div>
         </div>
 
-        <pre class="obsync-config-display">{{ JSON.stringify(props.connectionConfig, null, 2) }}</pre>
+        <pre class="obsync-config-display">{{ JSON.stringify(connectionConfigPreview, null, 2) }}</pre>
 
         <div class="obsync-action-row">
-          <button type="button" class="obsync-primary" @click="emit('copyConnectionConfig')">
-            复制连接配置
+          <button type="button" class="obsync-primary" @click="emit('copyConnectionConfig', includeSecrets)">
+            {{ includeSecrets ? "复制完整配置" : "复制连接配置" }}
           </button>
 
           <button type="button" class="obsync-secondary" @click="emit('pasteConnectionConfig')">

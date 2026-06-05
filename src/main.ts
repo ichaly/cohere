@@ -32,6 +32,8 @@ interface ConnectionConfig {
   accountKey: string;
   vaultKey: string;
   vaultId?: string;
+  accessKeyId?: string;
+  secretAccessKey?: string;
 }
 
 const DEFAULT_SETTINGS: ObsyncSettings = {
@@ -326,8 +328,8 @@ export default class ObsyncPlugin extends Plugin {
     await this.saveSettings();
   }
 
-  getConnectionConfig(): Record<string, string | number> {
-    return {
+  getConnectionConfig(includeSecrets = false): Record<string, string | number> {
+    const config: Record<string, string | number> = {
       schemaVersion: 1,
       endpoint: this.settings.endpoint,
       bucket: this.settings.bucket,
@@ -337,6 +339,13 @@ export default class ObsyncPlugin extends Plugin {
       vaultKey: this.settings.vaultKey,
       vaultId: this.settings.vaultId,
     };
+
+    if (includeSecrets) {
+      config.accessKeyId = this.settings.accessKeyId;
+      config.secretAccessKey = this.settings.secretAccessKey;
+    }
+
+    return config;
   }
 
   async importConnectionConfig(configText: string): Promise<void> {
@@ -349,6 +358,8 @@ export default class ObsyncPlugin extends Plugin {
       rootPrefix: config.rootPrefix,
       accountKey: config.accountKey,
       vaultKey: config.vaultKey,
+      accessKeyId: config.accessKeyId || this.settings.accessKeyId,
+      secretAccessKey: config.secretAccessKey || this.settings.secretAccessKey,
     });
   }
 }
@@ -394,6 +405,8 @@ function parseConnectionConfig(configText: string): ConnectionConfig {
     accountKey: readOptionalString(parsed, "accountKey", "default"),
     vaultKey: readRequiredString(parsed, "vaultKey"),
     vaultId: readOptionalString(parsed, "vaultId", ""),
+    accessKeyId: readOptionalString(parsed, "accessKeyId", ""),
+    secretAccessKey: readOptionalString(parsed, "secretAccessKey", ""),
   };
 
   if (config.vaultId) {
@@ -535,9 +548,9 @@ class ObsyncSettingTab extends PluginSettingTab {
         await navigator.clipboard.writeText(this.plugin.settings.deviceId);
         new Notice("设备 ID 已复制。");
       },
-      onCopyConnectionConfig: async () => {
-        await navigator.clipboard.writeText(JSON.stringify(this.plugin.getConnectionConfig(), null, 2));
-        new Notice("连接配置已复制。");
+      onCopyConnectionConfig: async (includeSecrets: boolean) => {
+        await navigator.clipboard.writeText(JSON.stringify(this.plugin.getConnectionConfig(includeSecrets), null, 2));
+        new Notice(includeSecrets ? "完整连接配置已复制。" : "连接配置已复制。");
       },
       onPasteConnectionConfig: async () => {
         try {
@@ -545,7 +558,8 @@ class ObsyncSettingTab extends PluginSettingTab {
           await this.plugin.importConnectionConfig(configText);
           Object.assign(settings, this.plugin.settings);
           Object.assign(connectionConfig, this.plugin.getConnectionConfig());
-          new Notice("连接配置已导入。请继续填写 Access Key ID 和 Secret Access Key。");
+          const hasSecrets = Boolean(this.plugin.settings.accessKeyId && this.plugin.settings.secretAccessKey);
+          new Notice(hasSecrets ? "连接配置已导入。" : "连接配置已导入。请继续填写 Access Key ID 和 Secret Access Key。");
         } catch (error) {
           const message = error instanceof Error ? error.message : String(error);
           new Notice(`导入连接配置失败：${message}`);

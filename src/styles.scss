@@ -94,6 +94,11 @@
   @apply flex items-center justify-between gap-3;
 }
 
+.obsync-inline-switch {
+  @apply flex shrink-0 cursor-pointer items-center gap-2 text-sm font-medium;
+  color: var(--text-muted);
+}
+
 .obsync-link-button {
   @apply shrink-0 cursor-pointer rounded px-2 py-1 text-xs font-semibold leading-4 transition;
   background: transparent;
