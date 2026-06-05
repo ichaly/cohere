@@ -595,10 +595,7 @@ class ObsidianVaultIO implements VaultIO {
 
     for (const part of path.split("/")) {
       current = current ? `${current}/${part}` : part;
-
-      if (!this.app.vault.getFolderByPath(current)) {
-        await this.app.vault.createFolder(current);
-      }
+      await this.ensureFolderExists(current);
     }
   }
 
@@ -616,11 +613,31 @@ class ObsidianVaultIO implements VaultIO {
 
     for (const part of parts) {
       current = current ? `${current}/${part}` : part;
-      const folder = this.app.vault.getFolderByPath(current);
+      await this.ensureFolderExists(current);
+    }
+  }
 
-      if (!(folder instanceof TFolder)) {
-        await this.app.vault.createFolder(current);
+  private async ensureFolderExists(path: string): Promise<void> {
+    if (this.app.vault.getFolderByPath(path) instanceof TFolder) {
+      return;
+    }
+
+    if (this.app.vault.getFileByPath(path) instanceof TFile) {
+      throw new Error(`Path exists as a file: ${path}`);
+    }
+
+    if (await this.app.vault.adapter.exists(path)) {
+      return;
+    }
+
+    try {
+      await this.app.vault.createFolder(path);
+    } catch (error) {
+      if (await this.app.vault.adapter.exists(path)) {
+        return;
       }
+
+      throw error;
     }
   }
 }
