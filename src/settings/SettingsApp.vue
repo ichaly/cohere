@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Platform, setIcon } from "obsidian";
+import { setIcon } from "obsidian";
 import { computed, ref, watchEffect } from "vue";
 
 type ObsyncSettings = {
@@ -33,7 +33,6 @@ const emit = defineEmits<{
 
 const showSecretAccessKey = ref(false);
 const includeSecrets = ref(false);
-const isMobile = Platform.isMobile;
 const secretAccessKeyButton = ref<HTMLButtonElement | null>(null);
 const connectionConfigPreview = computed(() => {
   if (!includeSecrets.value) {
@@ -60,7 +59,7 @@ watchEffect(() => {
 </script>
 
 <template>
-  <main class="obsync-panel" :class="{ 'is-mobile': isMobile }">
+  <main class="obsync-panel">
     <header class="obsync-header">
       <div>
         <h2 class="obsync-title">Obsync 设置</h2>
@@ -256,12 +255,7 @@ watchEffect(() => {
       <div class="obsync-row obsync-row-block">
         <div class="obsync-row-copy">
           <div class="obsync-row-title">
-            <div>
-              <h3>连接配置</h3>
-              <p>
-                {{ includeSecrets ? "将包含 Access Key 和 Secret，仅用于导入自己的设备。" : "复制到另一台设备导入。默认不包含 Access Key 和 Secret。" }}
-              </p>
-            </div>
+            <h3>连接配置</h3>
 
             <label class="obsync-inline-switch">
               <span>包含密钥</span>
@@ -275,6 +269,9 @@ watchEffect(() => {
               </span>
             </label>
           </div>
+          <p>
+            {{ includeSecrets ? "将包含 Access Key 和 Secret，仅用于导入自己的设备。" : "复制到另一台设备导入。默认不包含 Access Key 和 Secret。" }}
+          </p>
         </div>
 
         <pre class="obsync-config-display">{{ JSON.stringify(connectionConfigPreview, null, 2) }}</pre>
