@@ -110,6 +110,72 @@ describe("sync engine", () => {
     expect(store.manifest.deleted["notes/shared.md"]).toBeDefined();
   });
 
+  test("does not sync empty directories when the option is disabled", async () => {
+    const vault = new FakeVault({}, ["projects/empty"]);
+    const store = new FakeObjectStore();
+    const state: LocalSyncState = { files: {} };
+
+    await sync(vault, store, state, 1000);
+
+    expect(store.manifest.directories["projects/empty"]).toBeUndefined();
+    expect(state.directories?.["projects/empty"]).toBeUndefined();
+  });
+
+  test("syncs an empty directory when the option is enabled", async () => {
+    const deviceA = new FakeVault({}, ["projects/empty"]);
+    const deviceB = new FakeVault({});
+    const store = new FakeObjectStore();
+    const stateA: LocalSyncState = { files: {} };
+    const stateB: LocalSyncState = { files: {} };
+
+    await syncOnce({ vault: deviceA, store, state: stateA, deviceName: "Mac", deviceId: "dev_a", syncEmptyDirectories: true, now: () => 1000 });
+    await syncOnce({ vault: deviceB, store, state: stateB, deviceName: "Phone", deviceId: "dev_b", syncEmptyDirectories: true, now: () => 2000 });
+
+    expect(store.manifest.directories["projects/empty"]).toBeDefined();
+    expect(deviceB.hasDirectory("projects/empty")).toBe(true);
+    expect(stateB.directories?.["projects/empty"]?.deleted).toBe(false);
+  });
+
+  test("syncs an empty directory deletion when the option is enabled", async () => {
+    const deviceA = new FakeVault({}, ["projects/empty"]);
+    const deviceB = new FakeVault({});
+    const store = new FakeObjectStore();
+    const stateA: LocalSyncState = { files: {} };
+    const stateB: LocalSyncState = { files: {} };
+
+    await syncOnce({ vault: deviceA, store, state: stateA, deviceName: "Mac", deviceId: "dev_a", syncEmptyDirectories: true, now: () => 1000 });
+    await syncOnce({ vault: deviceB, store, state: stateB, deviceName: "Phone", deviceId: "dev_b", syncEmptyDirectories: true, now: () => 2000 });
+    await deviceA.deleteDirectory("projects/empty");
+    await syncOnce({ vault: deviceA, store, state: stateA, deviceName: "Mac", deviceId: "dev_a", syncEmptyDirectories: true, now: () => 3000 });
+    await syncOnce({ vault: deviceB, store, state: stateB, deviceName: "Phone", deviceId: "dev_b", syncEmptyDirectories: true, now: () => 4000 });
+
+    expect(store.manifest.directories["projects/empty"]).toBeUndefined();
+    expect(store.manifest.deletedDirectories["projects/empty"]).toBeDefined();
+    expect(deviceB.hasDirectory("projects/empty")).toBe(false);
+    expect(stateB.directories?.["projects/empty"]?.deleted).toBe(true);
+  });
+
+  test("does not delete local empty directories when the option is disabled", async () => {
+    const vault = new FakeVault({}, ["projects/empty"]);
+    const store = new FakeObjectStore();
+    const state: LocalSyncState = {
+      files: {},
+      directories: {
+        "projects/empty": { deleted: false, version: "ver_dir" },
+      },
+    };
+    store.manifest.deletedDirectories["projects/empty"] = {
+      deletedAt: 1000,
+      deletedRevision: 1,
+      previousVersion: "ver_dir",
+      deletedBy: "dev_other",
+    };
+
+    await syncOnce({ vault, store, state, deviceName: "Mac", deviceId: "dev_mac", now: () => 2000 });
+
+    expect(vault.hasDirectory("projects/empty")).toBe(true);
+  });
+
   test("syncs delete then same-name recreate as a new version to another device", async () => {
     const deviceA = new FakeVault({ "notes/shared.md": "old" });
     const deviceB = new FakeVault({});
@@ -613,11 +679,13 @@ describe("sync engine", () => {
 
 class FakeVault implements VaultIO {
   private files: Record<string, Uint8Array>;
+  private directories: Set<string>;
   private stats: Record<string, { mtime: number; size: number }>;
   readCount = 0;
 
-  constructor(files: Record<string, string>) {
+  constructor(files: Record<string, string>, directories: string[] = []) {
     this.files = {};
+    this.directories = new Set(directories);
     this.stats = {};
     for (const [path, content] of Object.entries(files)) {
       this.setFile(path, new TextEncoder().encode(content));
@@ -626,6 +694,13 @@ class FakeVault implements VaultIO {
 
   async scan(): Promise<Array<{ path: string; mtime: number; size: number }>> {
     return Object.keys(this.files).map((path) => ({ path, ...this.stats[path] }));
+  }
+
+  async scanEmptyDirectories(): Promise<string[]> {
+    return Array.from(this.directories).filter((directory) => {
+      const prefix = `${directory}/`;
+      return !Object.keys(this.files).some((path) => path.startsWith(prefix)) && !Array.from(this.directories).some((path) => path !== directory && path.startsWith(prefix));
+    });
   }
 
   async read(path: string): Promise<Uint8Array> {
@@ -639,6 +714,18 @@ class FakeVault implements VaultIO {
 
   async delete(path: string): Promise<void> {
     delete this.files[path];
+  }
+
+  async createDirectory(path: string): Promise<void> {
+    this.directories.add(path);
+  }
+
+  async deleteDirectory(path: string): Promise<void> {
+    this.directories.delete(path);
+  }
+
+  hasDirectory(path: string): boolean {
+    return this.directories.has(path);
   }
 
   async readText(path: string): Promise<string> {

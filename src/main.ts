@@ -20,6 +20,7 @@ interface ObsyncSettings {
   deviceName: string;
   syncIntervalMinutes: number;
   autoSync: boolean;
+  syncEmptyDirectories: boolean;
   syncState: LocalSyncState;
 }
 
@@ -50,6 +51,7 @@ const DEFAULT_SETTINGS: ObsyncSettings = {
   deviceName: "",
   syncIntervalMinutes: 5,
   autoSync: true,
+  syncEmptyDirectories: false,
   syncState: {
     files: {},
   },
@@ -137,6 +139,7 @@ export default class ObsyncPlugin extends Plugin {
           state: this.settings.syncState,
           deviceName: this.settings.deviceName || this.settings.deviceId,
           deviceId: this.settings.deviceId,
+          syncEmptyDirectories: this.settings.syncEmptyDirectories,
           now: () => Date.now(),
         });
 
@@ -558,6 +561,14 @@ class ObsidianVaultIO implements VaultIO {
     return new Uint8Array(await this.app.vault.readBinary(file));
   }
 
+  async scanEmptyDirectories(): Promise<string[]> {
+    return this.app.vault
+      .getAllLoadedFiles()
+      .filter((file): file is TFolder => file instanceof TFolder)
+      .filter((folder) => folder.path && !isIgnoredVaultPath(folder.path) && folder.children.length === 0)
+      .map((folder) => folder.path);
+  }
+
   async write(path: string, bytes: Uint8Array): Promise<void> {
     await this.ensureParentFolder(path);
     const file = this.app.vault.getFileByPath(path);
@@ -579,6 +590,26 @@ class ObsidianVaultIO implements VaultIO {
     }
   }
 
+  async createDirectory(path: string): Promise<void> {
+    let current = "";
+
+    for (const part of path.split("/")) {
+      current = current ? `${current}/${part}` : part;
+
+      if (!this.app.vault.getFolderByPath(current)) {
+        await this.app.vault.createFolder(current);
+      }
+    }
+  }
+
+  async deleteDirectory(path: string): Promise<void> {
+    const folder = this.app.vault.getFolderByPath(path);
+
+    if (folder instanceof TFolder && folder.children.length === 0) {
+      await this.app.vault.trash(folder, false);
+    }
+  }
+
   private async ensureParentFolder(path: string): Promise<void> {
     const parts = path.split("/").slice(0, -1);
     let current = "";
@@ -592,6 +623,10 @@ class ObsidianVaultIO implements VaultIO {
       }
     }
   }
+}
+
+function isIgnoredVaultPath(path: string): boolean {
+  return path === ".obsidian" || path.startsWith(".obsidian/") || path === ".trash" || path.startsWith(".trash/");
 }
 
 function toArrayBuffer(bytes: Uint8Array): ArrayBuffer {

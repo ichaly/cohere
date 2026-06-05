@@ -16,6 +16,7 @@ type ObsyncSettings = {
   deviceName: string;
   syncIntervalMinutes: number;
   autoSync: boolean;
+  syncEmptyDirectories: boolean;
 };
 
 const props = defineProps<{
@@ -245,6 +246,21 @@ watchEffect(() => {
             type="checkbox"
             :checked="props.settings.autoSync"
             @change="emit('update', { autoSync: ($event.target as HTMLInputElement).checked })"
+          />
+          <span></span>
+        </label>
+      </div>
+
+      <div class="obsync-row obsync-toggle-row">
+        <div class="obsync-row-copy">
+          <h3>同步空目录</h3>
+          <p>同步没有文件的文件夹。关闭后不会删除已有本地目录。</p>
+        </div>
+        <label class="obsync-switch">
+          <input
+            type="checkbox"
+            :checked="props.settings.syncEmptyDirectories"
+            @change="emit('update', { syncEmptyDirectories: ($event.target as HTMLInputElement).checked })"
           />
           <span></span>
         </label>
