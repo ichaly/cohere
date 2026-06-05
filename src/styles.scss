@@ -95,8 +95,12 @@
 }
 
 .obsync-inline-switch {
-  @apply flex shrink-0 cursor-pointer items-center gap-2 text-sm font-medium;
+  @apply flex shrink-0 cursor-pointer items-center gap-2 self-center whitespace-nowrap text-sm font-medium leading-6;
   color: var(--text-muted);
+
+  .obsync-switch {
+    @apply mt-0;
+  }
 }
 
 .obsync-link-button {
@@ -314,6 +318,14 @@
 
   .obsync-row-title {
     @apply items-start;
+  }
+
+  .obsync-row-block .obsync-row-title {
+    @apply flex-col;
+  }
+
+  .obsync-row-block .obsync-inline-switch {
+    @apply self-start;
   }
 
   .obsync-control,
