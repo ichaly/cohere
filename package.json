@@ -1,7 +1,7 @@
 {
   "name": "obsync",
   "version": "0.1.0",
-  "description": "Obsidian plugin for OSS / S3-compatible vault sync.",
+  "description": "Plugin for OSS / S3-compatible vault sync.",
   "main": "main.js",
   "scripts": {
     "dev": "vite build --watch",

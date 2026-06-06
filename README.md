@@ -1,4 +1,10 @@
-# Obsync
+# S3 Vault Sync
+
+S3 Vault Sync is a community plugin for syncing vault files through OSS / S3-compatible object storage. It supports manual sync, automatic sync, deletion sync, conflict copies, optional empty directory sync, and connection configuration import/export.
+
+The plugin ID is `obsync`.
+
+## 中文说明
 
 Obsync 是一个 Obsidian 社区插件，用于通过 OSS / S3 兼容对象存储同步当前 vault 文件。
 
