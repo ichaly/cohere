@@ -1,6 +1,6 @@
 {
   "name": "obsync",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Plugin for OSS / S3-compatible vault sync.",
   "main": "main.js",
   "scripts": {

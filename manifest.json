@@ -1,7 +1,7 @@
 {
   "id": "obsync",
   "name": "S3 Vault Sync",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "minAppVersion": "1.6.6",
   "description": "Sync vault files through OSS / S3-compatible object storage.",
   "author": "Chaly",
