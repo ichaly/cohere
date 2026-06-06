@@ -668,7 +668,7 @@ async function scanLocalFiles(
 
     result[file.path] = {
       bytes,
-      hash: canReuseHash ? previous!.lastSyncedHash! : await sha256Hex(bytes),
+      hash: canReuseHash && previous?.lastSyncedHash ? previous.lastSyncedHash : await sha256Hex(bytes),
       mtime: file.mtime,
       size: file.size,
     };

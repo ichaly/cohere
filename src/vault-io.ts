@@ -116,7 +116,7 @@ export class ObsidianVaultIO implements VaultIO {
   }
 
   private isIgnoredVaultPath(path: string): boolean {
-    const configDir = this.app.vault.configDir || ".obsidian";
+    const configDir = this.app.vault.configDir;
     return path === configDir || path.startsWith(`${configDir}/`) || path === ".trash" || path.startsWith(".trash/");
   }
 }
