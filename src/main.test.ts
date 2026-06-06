@@ -1,5 +1,7 @@
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
+import { TFile, TFolder } from "obsidian";
 import ObsyncPlugin from "./main";
+import { ObsidianVaultIO } from "./vault-io";
 
 vi.mock("obsidian", () => ({
   App: class {},
@@ -215,6 +217,43 @@ describe("device identity settings", () => {
 
     expect(plugin.settings.deviceName).toBe("Mac Desktop KS5A");
     expect(plugin.saveSettings).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe("vault IO compatibility", () => {
+  test("uses stable vault APIs to find and delete files and folders", async () => {
+    const file = Object.assign(new TFile(), { path: "note.md" });
+    const folder = Object.assign(new TFolder(), { path: "empty", children: [] });
+    const getAbstractFileByPath = vi.fn((path: string) => {
+      if (path === "note.md") return file;
+      if (path === "empty") return folder;
+      return null;
+    });
+    const app = {
+      fileManager: {
+        trashFile: vi.fn(async () => {}),
+      },
+      vault: {
+        adapter: { exists: vi.fn(async () => false) },
+        createBinary: vi.fn(),
+        createFolder: vi.fn(),
+        getAbstractFileByPath,
+        getAllLoadedFiles: vi.fn(() => [file, folder]),
+        getFiles: vi.fn(() => [file]),
+        modifyBinary: vi.fn(),
+        readBinary: vi.fn(async () => new ArrayBuffer(0)),
+      },
+    };
+    const io = new ObsidianVaultIO(app as never);
+
+    await io.read("note.md");
+    await io.delete("note.md");
+    await io.deleteDirectory("empty");
+
+    expect(getAbstractFileByPath).toHaveBeenCalledWith("note.md");
+    expect(getAbstractFileByPath).toHaveBeenCalledWith("empty");
+    expect(app.fileManager.trashFile).toHaveBeenCalledWith(file);
+    expect(app.fileManager.trashFile).toHaveBeenCalledWith(folder);
   });
 });
 

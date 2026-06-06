@@ -1,10 +1,11 @@
-import { App, Notice, Platform, Plugin, PluginSettingTab, requestUrl, type TAbstractFile, TFile, TFolder } from "obsidian";
+import { App, Notice, Platform, Plugin, PluginSettingTab, requestUrl, type TAbstractFile, TFile } from "obsidian";
 import { createApp, reactive, type App as VueApp } from "vue";
 import { createRandomId, createVaultId, normalizeKey } from "./core/ids";
 import SettingsApp from "./settings/SettingsApp.vue";
 import "./styles.scss";
-import { releaseDeletedContent, syncOnce, type LocalSyncState, type VaultIO } from "./sync/engine";
+import { releaseDeletedContent, syncOnce, type LocalSyncState } from "./sync/engine";
 import { S3ObjectStore } from "./store/s3";
+import { ObsidianVaultIO } from "./vault-io";
 
 interface ObsyncSettings {
   endpoint: string;
@@ -165,7 +166,7 @@ export default class ObsyncPlugin extends Plugin {
   }
 
   private moveRibbonIconToBottom(iconEl: HTMLElement): void {
-    const leftRibbonActions = document.querySelector(".workspace-ribbon.mod-left .side-dock-actions");
+    const leftRibbonActions = activeDocument.querySelector(".workspace-ribbon.mod-left .side-dock-actions");
     (leftRibbonActions ?? iconEl.parentElement)?.append(iconEl);
   }
 
@@ -178,8 +179,8 @@ export default class ObsyncPlugin extends Plugin {
       this.queueAutoSync();
     });
 
-    this.registerDomEvent(document, "visibilitychange", () => {
-      if (!document.hidden) {
+    this.registerDomEvent(activeDocument, "visibilitychange", () => {
+      if (!activeDocument.hidden) {
         this.queueAutoSync();
       }
     });
@@ -332,7 +333,8 @@ export default class ObsyncPlugin extends Plugin {
       deviceId: this.settings.deviceId,
       now: () => Date.now(),
       request: async (request) => {
-        const { host: _host, ...headers } = request.headers;
+        const headers = { ...request.headers };
+        delete headers.host;
         const response = await requestUrl({
           url: request.url,
           method: request.method,
@@ -359,7 +361,7 @@ export default class ObsyncPlugin extends Plugin {
   }
 
   async loadSettings(): Promise<void> {
-    const loaded = await this.loadData();
+    const loaded = await this.loadData() as Partial<ObsyncSettings> | null;
     this.settings = Object.assign({}, DEFAULT_SETTINGS, loaded);
 
     if (!this.settings.vaultKey) {
@@ -527,129 +529,6 @@ function readOptionalString(record: Record<string, unknown>, key: string, fallba
   }
 
   return value.trim() || fallback;
-}
-
-class ObsidianVaultIO implements VaultIO {
-  private app: App;
-
-  constructor(app: App) {
-    this.app = app;
-  }
-
-  async scan(): Promise<Array<{ path: string; mtime: number; size: number }>> {
-    const files = this.app.vault.getFiles();
-    const result: Array<{ path: string; mtime: number; size: number }> = [];
-
-    for (const file of files) {
-      result.push({
-        path: file.path,
-        mtime: file.stat.mtime,
-        size: file.stat.size,
-      });
-    }
-
-    return result;
-  }
-
-  async read(path: string): Promise<Uint8Array> {
-    const file = this.app.vault.getFileByPath(path);
-
-    if (!file) {
-      return new Uint8Array();
-    }
-
-    return new Uint8Array(await this.app.vault.readBinary(file));
-  }
-
-  async scanEmptyDirectories(): Promise<string[]> {
-    return this.app.vault
-      .getAllLoadedFiles()
-      .filter((file): file is TFolder => file instanceof TFolder)
-      .filter((folder) => folder.path && !isIgnoredVaultPath(folder.path) && folder.children.length === 0)
-      .map((folder) => folder.path);
-  }
-
-  async write(path: string, bytes: Uint8Array): Promise<void> {
-    await this.ensureParentFolder(path);
-    const file = this.app.vault.getFileByPath(path);
-    const data = toArrayBuffer(bytes);
-
-    if (file instanceof TFile) {
-      await this.app.vault.modifyBinary(file, data);
-      return;
-    }
-
-    await this.app.vault.createBinary(path, data);
-  }
-
-  async delete(path: string): Promise<void> {
-    const file = this.app.vault.getFileByPath(path);
-
-    if (file) {
-      await this.app.vault.trash(file, false);
-    }
-  }
-
-  async createDirectory(path: string): Promise<void> {
-    let current = "";
-
-    for (const part of path.split("/")) {
-      current = current ? `${current}/${part}` : part;
-      await this.ensureFolderExists(current);
-    }
-  }
-
-  async deleteDirectory(path: string): Promise<void> {
-    const folder = this.app.vault.getFolderByPath(path);
-
-    if (folder instanceof TFolder && folder.children.length === 0) {
-      await this.app.vault.trash(folder, false);
-    }
-  }
-
-  private async ensureParentFolder(path: string): Promise<void> {
-    const parts = path.split("/").slice(0, -1);
-    let current = "";
-
-    for (const part of parts) {
-      current = current ? `${current}/${part}` : part;
-      await this.ensureFolderExists(current);
-    }
-  }
-
-  private async ensureFolderExists(path: string): Promise<void> {
-    if (this.app.vault.getFolderByPath(path) instanceof TFolder) {
-      return;
-    }
-
-    if (this.app.vault.getFileByPath(path) instanceof TFile) {
-      throw new Error(`Path exists as a file: ${path}`);
-    }
-
-    if (await this.app.vault.adapter.exists(path)) {
-      return;
-    }
-
-    try {
-      await this.app.vault.createFolder(path);
-    } catch (error) {
-      if (await this.app.vault.adapter.exists(path)) {
-        return;
-      }
-
-      throw error;
-    }
-  }
-}
-
-function isIgnoredVaultPath(path: string): boolean {
-  return path === ".obsidian" || path.startsWith(".obsidian/") || path === ".trash" || path.startsWith(".trash/");
-}
-
-function toArrayBuffer(bytes: Uint8Array): ArrayBuffer {
-  const copy = new Uint8Array(bytes.byteLength);
-  copy.set(bytes);
-  return copy.buffer;
 }
 
 class ObsyncSettingTab extends PluginSettingTab {
