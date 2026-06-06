@@ -101,8 +101,8 @@ obsync
 推送版本 tag 会触发 GitHub Actions 自动发布：
 
 ```bash
-git tag v0.1.0
-git push origin v0.1.0
+git tag 0.1.0
+git push origin 0.1.0
 ```
 
 Release 会上传：
