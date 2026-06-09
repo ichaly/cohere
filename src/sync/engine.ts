@@ -504,6 +504,10 @@ function planPathAction(input: {
     const localChanged = !input.previous || input.previous.deleted || input.local.hash !== input.previous.lastSyncedHash;
     const remoteChanged = input.remote.version !== input.previous?.version || input.remote.contentHash !== input.previous?.remoteHash;
 
+    if (input.local.hash === input.remote.contentHash) {
+      return remoteChanged ? "download" : "noop";
+    }
+
     if (!localChanged && !remoteChanged) {
       return "noop";
     }

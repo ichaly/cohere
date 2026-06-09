@@ -589,6 +589,41 @@ describe("sync engine", () => {
     expect(store.manifest.paths["notes/today.md"]?.contentHash).toBe(await hashText("local"));
   });
 
+  test("does not create a conflict when local and remote content match", async () => {
+    const baseHash = await hashText("base");
+    const sameHash = await hashText("same");
+    const vault = new FakeVault({ "notes/today.md": "same" });
+    const store = new FakeObjectStore();
+    const state: LocalSyncState = {
+      files: {
+        "notes/today.md": {
+          lastSyncedHash: baseHash,
+          remoteHash: baseHash,
+          deleted: false,
+          version: "ver_base",
+        },
+      },
+    };
+    await store.putText(blobObjectKey(sameHash), "same");
+    store.manifest.paths["notes/today.md"] = {
+      contentHash: sameHash,
+      size: 4,
+      updatedAt: 2000,
+      updatedBy: "dev_other",
+      revision: 2,
+      version: "ver_remote",
+    };
+
+    const result = await sync(vault, store, state, 3000);
+
+    expect(result.conflicts).toBe(0);
+    expect(result.downloaded).toBe(1);
+    expect(await vault.readText("notes/today.md")).toBe("same");
+    expect(await vault.readText("notes/today.conflict.Mac.19700101-000003.md")).toBe("");
+    expect(state.files["notes/today.md"]?.lastSyncedHash).toBe(sameHash);
+    expect(state.files["notes/today.md"]?.version).toBe("ver_remote");
+  });
+
   test("releaseDeletedContent removes deleted tombstones and unreferenced blobs", async () => {
     const keptHash = await hashText("kept");
     const deletedHash = await hashText("deleted");
