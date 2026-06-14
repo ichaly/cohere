@@ -1,14 +1,14 @@
-# S3 Vault Sync
+# Cohere
 
-S3 Vault Sync is a community plugin for syncing vault files through OSS / S3-compatible object storage. It supports manual sync, automatic sync, deletion sync, conflict copies, optional empty directory sync, and connection configuration import/export.
+Cohere is a community plugin for syncing vault files through OSS / S3-compatible object storage. It supports manual sync, automatic sync, deletion sync, conflict copies, optional empty directory sync, and connection configuration import/export.
 
-The plugin ID is `obsync`.
+The plugin ID is `cohere`.
 
 ## 中文说明
 
-Obsync 是一个 Obsidian 社区插件，用于通过 OSS / S3 兼容对象存储同步当前 vault 文件。
+Cohere 用于通过 OSS / S3 兼容对象存储同步当前 vault 文件。
 
-![Obsync 设置示例](docs/assets/settings-s3-endpoint-sanitized.png)
+![Cohere banner](docs/assets/cohere-banner.webp)
 
 ## 当前能力
 
@@ -72,7 +72,7 @@ dist/main.css
 
 ## 本地安装
 
-安装到 Obsidian 时，需要复制：
+本地安装时，需要复制：
 
 ```text
 manifest.json
@@ -80,10 +80,10 @@ dist/main.js
 dist/main.css
 ```
 
-到目标 vault 的插件目录，并把 `dist/main.css` 放置为 Obsidian 识别的 `styles.css`：
+到目标 vault 的插件目录，并把 `dist/main.css` 放置为插件样式文件 `styles.css`：
 
 ```text
-<vault>/.obsidian/plugins/obsync/
+<vault>/.obsidian/plugins/cohere/
   manifest.json
   main.js
   styles.css
@@ -99,7 +99,7 @@ pnpm install-plugin "/path/to/your-vault"
 ## 插件 ID
 
 ```text
-obsync
+cohere
 ```
 
 ## 发布
