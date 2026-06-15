@@ -28,7 +28,7 @@ const props = defineProps<{
 const emit = defineEmits<{
   update: [update: Partial<CohereSettings>];
   copyDeviceId: [];
-  copyConnectionConfig: [includeSecrets: boolean];
+  copyEncodedConnectionConfig: [includeSecrets: boolean];
   pasteConnectionConfig: [];
   releaseDeletedContent: [];
 }>();
@@ -309,8 +309,8 @@ watchEffect(() => {
         <pre class="cohere-config-display">{{ JSON.stringify(connectionConfigPreview, null, 2) }}</pre>
 
         <div class="cohere-action-row">
-          <button type="button" class="cohere-primary" @click="emit('copyConnectionConfig', includeSecrets)">
-            {{ includeSecrets ? "复制完整配置" : "复制连接配置" }}
+          <button type="button" class="cohere-primary" @click="emit('copyEncodedConnectionConfig', includeSecrets)">
+            导出并复制
           </button>
 
           <button type="button" class="cohere-secondary" @click="emit('pasteConnectionConfig')">

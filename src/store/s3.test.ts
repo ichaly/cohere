@@ -171,6 +171,26 @@ describe("S3ObjectStore", () => {
 
     expect(requests[0]?.url).toBe("https://cohere-test.s3.example.com/cohere/v1/vaults/vlt_TEST/files/notes/today.md");
   });
+
+  test("retries transient request failures", async () => {
+    let attempts = 0;
+    const store = createStore(async () => {
+      attempts += 1;
+
+      if (attempts === 1) {
+        throw new Error("net::ERR_CONNECTION_TIMED_OUT");
+      }
+
+      return {
+        status: 200,
+        text: "",
+        arrayBuffer: new ArrayBuffer(0),
+      };
+    });
+
+    await expect(store.writeObject("files/notes/today.md", new TextEncoder().encode("hello"))).resolves.toBeUndefined();
+    expect(attempts).toBe(2);
+  });
 });
 
 function createStore(

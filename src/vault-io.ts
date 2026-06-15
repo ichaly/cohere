@@ -13,6 +13,10 @@ export class ObsidianVaultIO implements VaultIO {
     const result: Array<{ path: string; mtime: number; size: number }> = [];
 
     for (const file of files) {
+      if (this.isIgnoredVaultPath(file.path)) {
+        continue;
+      }
+
       result.push({
         path: file.path,
         mtime: file.stat.mtime,
@@ -117,7 +121,12 @@ export class ObsidianVaultIO implements VaultIO {
 
   private isIgnoredVaultPath(path: string): boolean {
     const configDir = this.app.vault.configDir;
-    return path === configDir || path.startsWith(`${configDir}/`) || path === ".trash" || path.startsWith(".trash/");
+    return path === configDir ||
+      path.startsWith(`${configDir}/`) ||
+      path === ".git" ||
+      path.startsWith(".git/") ||
+      path === ".trash" ||
+      path.startsWith(".trash/");
   }
 }
 

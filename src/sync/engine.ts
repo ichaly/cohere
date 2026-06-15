@@ -100,6 +100,13 @@ interface SyncOnceInput {
   deviceId: string;
   syncEmptyDirectories?: boolean;
   now(): number;
+  onProgress?(progress: SyncProgress): void;
+}
+
+export interface SyncProgress {
+  completed: number;
+  total: number;
+  current?: string;
 }
 
 interface PlannedFile {
@@ -115,7 +122,7 @@ interface PlannedFile {
 type SyncAction = "noop" | "upload" | "download" | "conflict" | "mark-remote-deleted" | "delete-local";
 type DirectorySyncAction = "noop" | "upload-directory" | "create-local-directory" | "mark-directory-deleted" | "delete-local-directory" | "prune-directory";
 
-const SYNC_CONCURRENCY = 4;
+const SYNC_CONCURRENCY = 8;
 const TOMBSTONE_RETENTION_MS = 30 * 24 * 60 * 60 * 1000;
 
 export function createEmptyManifest(): RemoteManifest {
@@ -156,6 +163,7 @@ export async function syncOnce(input: SyncOnceInput): Promise<SyncResult> {
     directoryActions.some((item) => item.action === "upload-directory" || item.action === "mark-directory-deleted" || item.action === "prune-directory") ||
     expiredTombstones.length > 0 ||
     expiredDirectoryTombstones.length > 0;
+  const progress = createProgressReporter(input, actions.length + directoryActions.length + expiredTombstones.length + expiredDirectoryTombstones.length);
 
   if (actions.length === 0 && directoryActions.length === 0 && expiredTombstones.length === 0 && expiredDirectoryTombstones.length === 0) {
     updateDeviceCheckpoint(manifest, input);
@@ -175,11 +183,16 @@ export async function syncOnce(input: SyncOnceInput): Promise<SyncResult> {
   }
 
   try {
-    await mapLimit(actions, SYNC_CONCURRENCY, (item) => applyAction(item, input, manifest, result));
-    await applyDirectoryActions(directoryActions, input, manifest);
+    await mapLimit(actions, SYNC_CONCURRENCY, async (item) => {
+      await applyAction(item, input, manifest, result);
+      progress.tick(item.path);
+    });
+    await applyDirectoryActions(directoryActions, input, manifest, progress.tick);
 
     pruneTombstones(manifest, input.state, expiredTombstones);
+    progress.tickMany(expiredTombstones.length, "清理删除记录");
     pruneDirectoryTombstones(manifest, input.state, expiredDirectoryTombstones);
+    progress.tickMany(expiredDirectoryTombstones.length, "清理目录删除记录");
     updateDeviceCheckpoint(manifest, input);
     input.state.lastSyncAt = input.now();
 
@@ -196,9 +209,31 @@ export async function syncOnce(input: SyncOnceInput): Promise<SyncResult> {
   }
 }
 
+function createProgressReporter(input: SyncOnceInput, total: number): { tick(current?: string): void; tickMany(count: number, current?: string): void } {
+  let completed = 0;
+
+  input.onProgress?.({ completed, total });
+
+  return {
+    tick(current?: string): void {
+      completed += 1;
+      input.onProgress?.({ completed, total, current });
+    },
+    tickMany(count: number, current?: string): void {
+      if (count <= 0) {
+        return;
+      }
+
+      completed += count;
+      input.onProgress?.({ completed, total, current });
+    },
+  };
+}
+
 async function applyAction(item: PlannedFile, input: SyncOnceInput, manifest: RemoteManifest, result: SyncResult): Promise<void> {
   if (item.action === "upload" && item.local) {
-    await writeBlob(input.store, manifest, item.local.hash, item.local.bytes, item.local.size, input.now());
+    const bytes = await ensureUploadBytes(input.vault, item.path, item.local);
+    await writeBlob(input.store, manifest, item.local.hash, bytes, item.local.size, input.now());
     manifest.paths[item.path] = activeEntry(item.local, input.deviceId, input.now(), nextRevision(manifest));
     input.state.files[item.path] = syncedState(item.local.hash, item.local, manifest.paths[item.path].version);
     result.uploaded += 1;
@@ -252,6 +287,18 @@ async function applyConflict(item: PlannedFile, input: SyncOnceInput, result: Sy
     result.conflicts += 1;
     result.deletedLocal += 1;
   }
+}
+
+async function ensureUploadBytes(
+  vault: VaultIO,
+  path: string,
+  local: { bytes: Uint8Array; size: number },
+): Promise<Uint8Array> {
+  if (local.bytes.byteLength > 0 || local.size === 0) {
+    return local.bytes;
+  }
+
+  return vault.read(path);
 }
 
 export interface ReleaseDeletedContentResult {
@@ -413,18 +460,21 @@ async function applyDirectoryActions(
   actions: PlannedDirectory[],
   input: SyncOnceInput,
   manifest: RemoteManifest,
+  onComplete: (path: string) => void,
 ): Promise<void> {
   for (const item of actions) {
     if (item.action === "upload-directory") {
       delete manifest.deletedDirectories[item.path];
       manifest.directories[item.path] = directoryEntry(input.deviceId, input.now(), nextRevision(manifest));
       input.state.directories![item.path] = { deleted: false, version: manifest.directories[item.path].version };
+      onComplete(item.path);
       continue;
     }
 
     if (item.action === "create-local-directory") {
       await input.vault.createDirectory?.(item.path);
       input.state.directories![item.path] = { deleted: false, version: item.remote?.version ?? null };
+      onComplete(item.path);
       continue;
     }
 
@@ -433,18 +483,21 @@ async function applyDirectoryActions(
       delete manifest.directories[item.path];
       manifest.deletedDirectories[item.path] = deletedDirectoryEntry(item, remote, input.deviceId, input.now(), nextRevision(manifest));
       input.state.directories![item.path] = { deleted: true, version: manifest.deletedDirectories[item.path].previousVersion };
+      onComplete(item.path);
       continue;
     }
 
     if (item.action === "delete-local-directory") {
       await input.vault.deleteDirectory?.(item.path);
       input.state.directories![item.path] = { deleted: true, version: item.deleted?.previousVersion ?? null };
+      onComplete(item.path);
       continue;
     }
 
     if (item.action === "prune-directory") {
       delete manifest.directories[item.path];
       delete input.state.directories![item.path];
+      onComplete(item.path);
     }
   }
 }

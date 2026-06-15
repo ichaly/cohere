@@ -16,6 +16,31 @@ describe("sync engine", () => {
     expect(state.files["notes/today.md"]?.lastSyncedHash).toBe(hash);
   });
 
+  test("reports progress for changed files", async () => {
+    const vault = new FakeVault({
+      "notes/a.md": "a",
+      "notes/b.md": "b",
+    });
+    const store = new FakeObjectStore();
+    const state: LocalSyncState = { files: {} };
+    const events: Array<{ completed: number; total: number }> = [];
+
+    await syncOnce({
+      vault,
+      store,
+      state,
+      deviceName: "Mac",
+      deviceId: "dev_a",
+      now: () => 1000,
+      onProgress: (progress) => {
+        events.push({ completed: progress.completed, total: progress.total });
+      },
+    });
+
+    expect(events[0]).toEqual({ completed: 0, total: 2 });
+    expect(events[events.length - 1]).toEqual({ completed: 2, total: 2 });
+  });
+
   test("does not read unchanged local files after metadata is cached", async () => {
     const vault = new FakeVault({ "notes/today.md": "hello" });
     const store = new FakeObjectStore();
@@ -28,6 +53,23 @@ describe("sync engine", () => {
     expect(result.uploaded).toBe(0);
     expect(result.downloaded).toBe(0);
     expect(vault.readCount).toBe(0);
+  });
+
+  test("uploads real bytes when remote state was cleared but local metadata is cached", async () => {
+    const vault = new FakeVault({ "notes/today.md": "hello" });
+    const state: LocalSyncState = { files: {} };
+
+    await sync(vault, new FakeObjectStore(), state, 1000);
+
+    const resetStore = new FakeObjectStore();
+    vault.readCount = 0;
+    const result = await sync(vault, resetStore, state, 2000);
+    const hash = await hashText("hello");
+
+    expect(result.uploaded).toBe(1);
+    expect(vault.readCount).toBe(1);
+    expect(await resetStore.getText(blobObjectKey(hash))).toBe("hello");
+    expect(resetStore.manifest.paths["notes/today.md"]?.contentHash).toBe(hash);
   });
 
   test("skips lock and manifest write when nothing changed", async () => {

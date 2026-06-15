@@ -30,6 +30,9 @@ interface S3ObjectStoreOptions {
 
 export type S3AddressingStyle = "auto" | "path" | "virtual-hosted";
 
+const REQUEST_RETRY_LIMIT = 3;
+const REQUEST_RETRY_BASE_DELAY_MS = 500;
+
 export class S3ObjectStore implements ObjectStore {
   private options: S3ObjectStoreOptions;
   private layout: ReturnType<typeof createRemoteLayout>;
@@ -142,12 +145,36 @@ export class S3ObjectStore implements ObjectStore {
       timestamp: this.options.now(),
     });
 
-    return this.options.request({
+    return this.requestWithRetry({
       url,
       method,
       headers,
       body: body ? toArrayBuffer(body) : undefined,
     });
+  }
+
+  private async requestWithRetry(request: HttpRequest): Promise<HttpResponse> {
+    let lastError: unknown;
+
+    for (let attempt = 0; attempt <= REQUEST_RETRY_LIMIT; attempt += 1) {
+      try {
+        const response = await this.options.request(request);
+
+        if (!isRetriableStatus(response.status) || attempt === REQUEST_RETRY_LIMIT) {
+          return response;
+        }
+      } catch (error) {
+        lastError = error;
+
+        if (attempt === REQUEST_RETRY_LIMIT) {
+          throw error;
+        }
+      }
+
+      await delay(REQUEST_RETRY_BASE_DELAY_MS * 2 ** attempt);
+    }
+
+    throw lastError instanceof Error ? lastError : new Error(String(lastError));
   }
 }
 
@@ -186,6 +213,14 @@ function safeHostname(endpoint: string): string {
   } catch {
     return "";
   }
+}
+
+function isRetriableStatus(status: number): boolean {
+  return status === 408 || status === 429 || status >= 500;
+}
+
+function delay(ms: number): Promise<void> {
+  return new Promise((resolve) => globalThis.setTimeout(resolve, ms));
 }
 
 function encodeKey(key: string): string {

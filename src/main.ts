@@ -63,6 +63,7 @@ const DEFAULT_SETTINGS: CohereSettings = {
 
 const AUTO_SYNC_DEBOUNCE_MS = 2_000;
 const FILE_EVENT_SUPPRESSION_MS = 1_000;
+const CONNECTION_CONFIG_PREFIX = "cohere://config/v1/";
 
 type SyncTrigger = "manual" | "auto";
 
@@ -103,8 +104,8 @@ export default class CoherePlugin extends Plugin {
       id: "copy-connection-config",
       name: "复制连接配置",
       callback: async () => {
-        await navigator.clipboard.writeText(JSON.stringify(this.getConnectionConfig(), null, 2));
-        new Notice("Cohere 连接配置已复制。");
+        await navigator.clipboard.writeText(this.getEncodedConnectionConfig());
+        new Notice("Cohere 连接配置已导出并复制。");
       },
     });
 
@@ -145,6 +146,10 @@ export default class CoherePlugin extends Plugin {
           deviceId: this.settings.deviceId,
           syncEmptyDirectories: this.settings.syncEmptyDirectories,
           now: () => Date.now(),
+          onProgress: (progress) => {
+            const text = progress.total > 0 ? `同步中 ${progress.completed}/${progress.total}` : "同步中...";
+            this.setOperationStatus(text, progress.current);
+          },
         });
 
         await this.saveSettings();
@@ -312,10 +317,10 @@ export default class CoherePlugin extends Plugin {
     this.activeNotice = new Notice(message);
   }
 
-  private setOperationStatus(text: string): void {
+  private setOperationStatus(text: string, detail?: string): void {
     this.statusBarItem?.classList.remove("is-hidden");
     this.statusBarItem?.setText(text);
-    this.statusBarItem?.setAttribute("title", text);
+    this.statusBarItem?.setAttribute("title", detail ? `${text}：${detail}` : text);
   }
 
   private clearOperationStatus(): void {
@@ -434,6 +439,10 @@ export default class CoherePlugin extends Plugin {
     return config;
   }
 
+  getEncodedConnectionConfig(includeSecrets = false): string {
+    return `${CONNECTION_CONFIG_PREFIX}${encodeBase64Url(JSON.stringify(this.getConnectionConfig(includeSecrets)))}`;
+  }
+
   async importConnectionConfig(configText: string): Promise<void> {
     const config = parseConnectionConfig(configText);
 
@@ -484,9 +493,10 @@ function getDeviceNameSuffix(deviceId: string): string {
 
 function parseConnectionConfig(configText: string): ConnectionConfig {
   let parsed: unknown;
+  const normalizedText = decodeConnectionConfigText(configText.trim());
 
   try {
-    parsed = JSON.parse(configText);
+    parsed = JSON.parse(normalizedText);
   } catch {
     throw new Error("连接配置不是有效 JSON。");
   }
@@ -514,6 +524,42 @@ function parseConnectionConfig(configText: string): ConnectionConfig {
   }
 
   return config;
+}
+
+function decodeConnectionConfigText(configText: string): string {
+  if (!configText.startsWith(CONNECTION_CONFIG_PREFIX)) {
+    return configText;
+  }
+
+  const encoded = configText.slice(CONNECTION_CONFIG_PREFIX.length);
+  if (!/^[A-Za-z0-9_-]+$/.test(encoded)) {
+    throw new Error("连接配置编码串无效。");
+  }
+
+  try {
+    return decodeBase64Url(encoded);
+  } catch {
+    throw new Error("连接配置编码串无效。");
+  }
+}
+
+function encodeBase64Url(text: string): string {
+  const bytes = new TextEncoder().encode(text);
+  let binary = "";
+
+  for (const byte of bytes) {
+    binary += String.fromCharCode(byte);
+  }
+
+  return btoa(binary).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
+}
+
+function decodeBase64Url(encoded: string): string {
+  const normalized = encoded.replace(/-/g, "+").replace(/_/g, "/");
+  const padded = normalized.padEnd(Math.ceil(normalized.length / 4) * 4, "=");
+  const binary = atob(padded);
+  const bytes = Uint8Array.from(binary, (char) => char.charCodeAt(0));
+  return new TextDecoder().decode(bytes);
 }
 
 function readAddressingStyle(record: Record<string, unknown>, key: string, fallback: S3AddressingStyle): S3AddressingStyle {
@@ -588,9 +634,9 @@ class CohereSettingTab extends PluginSettingTab {
         await navigator.clipboard.writeText(this.plugin.settings.deviceId);
         new Notice("设备 ID 已复制。");
       },
-      onCopyConnectionConfig: async (includeSecrets: boolean) => {
-        await navigator.clipboard.writeText(JSON.stringify(this.plugin.getConnectionConfig(includeSecrets), null, 2));
-        new Notice(includeSecrets ? "完整连接配置已复制。" : "连接配置已复制。");
+      onCopyEncodedConnectionConfig: async (includeSecrets: boolean) => {
+        await navigator.clipboard.writeText(this.plugin.getEncodedConnectionConfig(includeSecrets));
+        new Notice(includeSecrets ? "完整连接配置已导出并复制。" : "连接配置已导出并复制。");
       },
       onPasteConnectionConfig: async () => {
         try {

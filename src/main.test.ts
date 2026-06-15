@@ -200,10 +200,68 @@ describe("connection config import and export", () => {
     expect(plugin.saveSettings).toHaveBeenCalledTimes(1);
   });
 
+  test("exports and imports encoded connection config", async () => {
+    const source = createPlugin({
+      accessKeyId: "AKIA_TEST",
+      secretAccessKey: "SECRET_TEST",
+      rootPrefix: "cohere/v2",
+      accountKey: "team",
+      vaultKey: "notes",
+    });
+    const target = createPlugin({
+      accessKeyId: "existing-key",
+      secretAccessKey: "existing-secret",
+    });
+
+    const encodedConfig = source.getEncodedConnectionConfig(true);
+    expect(encodedConfig).toMatch(/^cohere:\/\/config\/v1\//);
+
+    await target.importConnectionConfig(encodedConfig);
+
+    expect(target.settings).toMatchObject({
+      endpoint: "https://example.com",
+      bucket: "vault",
+      addressingStyle: "auto",
+      region: "auto",
+      rootPrefix: "cohere/v2",
+      accountKey: "team",
+      vaultKey: "notes",
+      accessKeyId: "AKIA_TEST",
+      secretAccessKey: "SECRET_TEST",
+    });
+    expect(target.saveSettings).toHaveBeenCalledTimes(1);
+  });
+
+  test("imports encoded connection config without replacing credentials when secrets are excluded", async () => {
+    const source = createPlugin({
+      accessKeyId: "AKIA_TEST",
+      secretAccessKey: "SECRET_TEST",
+      rootPrefix: "cohere/v2",
+      accountKey: "team",
+      vaultKey: "notes",
+    });
+    const target = createPlugin({
+      accessKeyId: "existing-key",
+      secretAccessKey: "existing-secret",
+    });
+
+    await target.importConnectionConfig(source.getEncodedConnectionConfig());
+
+    expect(target.settings).toMatchObject({
+      rootPrefix: "cohere/v2",
+      accountKey: "team",
+      vaultKey: "notes",
+      accessKeyId: "existing-key",
+      secretAccessKey: "existing-secret",
+    });
+    expect(target.saveSettings).toHaveBeenCalledTimes(1);
+  });
+
   test("rejects invalid connection config text", async () => {
     const plugin = createPlugin();
 
     await expect(plugin.importConnectionConfig("not json")).rejects.toThrow("连接配置不是有效 JSON。");
+    await expect(plugin.importConnectionConfig("cohere://config/v1/%")).rejects.toThrow("连接配置编码串无效。");
     await expect(plugin.importConnectionConfig(JSON.stringify({ schemaVersion: 2 }))).rejects.toThrow("连接配置版本不支持。");
     await expect(plugin.importConnectionConfig(JSON.stringify({ schemaVersion: 1, endpoint: "x" }))).rejects.toThrow("连接配置缺少 bucket。");
   });
@@ -224,6 +282,21 @@ describe("device identity settings", () => {
 });
 
 describe("vault IO compatibility", () => {
+  test("skips internal vault paths during file scans", async () => {
+    const note = Object.assign(new TFile(), { path: "note.md", stat: { mtime: 1, size: 4 } });
+    const gitObject = Object.assign(new TFile(), { path: ".git/objects/aa/hash", stat: { mtime: 1, size: 4 } });
+    const pluginData = Object.assign(new TFile(), { path: ".obsidian/plugins/cohere/data.json", stat: { mtime: 1, size: 4 } });
+    const trashed = Object.assign(new TFile(), { path: ".trash/deleted.md", stat: { mtime: 1, size: 4 } });
+    const io = new ObsidianVaultIO({
+      vault: {
+        configDir: ".obsidian",
+        getFiles: vi.fn(() => [note, gitObject, pluginData, trashed]),
+      },
+    } as never);
+
+    await expect(io.scan()).resolves.toEqual([{ path: "note.md", mtime: 1, size: 4 }]);
+  });
+
   test("uses stable vault APIs to find and delete files and folders", async () => {
     const file = Object.assign(new TFile(), { path: "note.md" });
     const folder = Object.assign(new TFolder(), { path: "empty", children: [] });
@@ -278,6 +351,7 @@ function createPlugin(settings: Partial<TestSettings> = {}): TestPlugin {
     deviceName: "Mac",
     syncIntervalMinutes: 5,
     autoSync: true,
+    syncEmptyDirectories: false,
     syncState: { files: {} },
     ...settings,
   };
@@ -289,7 +363,8 @@ function createPlugin(settings: Partial<TestSettings> = {}): TestPlugin {
 type TestPlugin = {
   app: { vault: { getName: () => string } };
   settings: TestSettings;
-  getConnectionConfig: () => Record<string, string | number>;
+  getConnectionConfig: (includeSecrets?: boolean) => Record<string, string | number>;
+  getEncodedConnectionConfig: (includeSecrets?: boolean) => string;
   importConnectionConfig: (text: string) => Promise<void>;
   updateSettings: (update: Partial<TestSettings>) => Promise<void>;
   saveSettings: ReturnType<typeof vi.fn<() => Promise<void>>>;
@@ -316,5 +391,6 @@ interface TestSettings {
   deviceName: string;
   syncIntervalMinutes: number;
   autoSync: boolean;
+  syncEmptyDirectories: boolean;
   syncState: { files: Record<string, unknown> };
 }
