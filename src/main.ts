@@ -4,12 +4,13 @@ import { createRandomId, createVaultId, normalizeKey } from "./core/ids";
 import SettingsApp from "./settings/SettingsApp.vue";
 import "./styles.scss";
 import { releaseDeletedContent, syncOnce, type LocalSyncState } from "./sync/engine";
-import { S3ObjectStore } from "./store/s3";
+import { S3ObjectStore, type S3AddressingStyle } from "./store/s3";
 import { ObsidianVaultIO } from "./vault-io";
 
 interface ObsyncSettings {
   endpoint: string;
   bucket: string;
+  addressingStyle: S3AddressingStyle;
   region: string;
   accessKeyId: string;
   secretAccessKey: string;
@@ -29,6 +30,7 @@ interface ConnectionConfig {
   schemaVersion: 1;
   endpoint: string;
   bucket: string;
+  addressingStyle?: S3AddressingStyle;
   region: string;
   rootPrefix: string;
   accountKey: string;
@@ -41,6 +43,7 @@ interface ConnectionConfig {
 const DEFAULT_SETTINGS: ObsyncSettings = {
   endpoint: "",
   bucket: "",
+  addressingStyle: "auto",
   region: "",
   accessKeyId: "",
   secretAccessKey: "",
@@ -255,7 +258,7 @@ export default class ObsyncPlugin extends Plugin {
 
       this.pruneLocalDeletedState();
       await this.saveSettings();
-      this.showNotice(`Obsync 已释放：清理删除记录 ${result.deletedTombstones}，删除 Blob ${result.deletedBlobs}。`);
+      this.showNotice(`Obsync 已释放：清理文件删除记录 ${result.deletedTombstones}，目录删除记录 ${result.deletedDirectoryTombstones}，删除 Blob ${result.deletedBlobs}。`);
     });
   }
 
@@ -325,6 +328,7 @@ export default class ObsyncPlugin extends Plugin {
     return new S3ObjectStore({
       endpoint: this.settings.endpoint,
       bucket: this.settings.bucket,
+      addressingStyle: this.settings.addressingStyle,
       region: this.settings.region || "auto",
       accessKeyId: this.settings.accessKeyId,
       secretAccessKey: this.settings.secretAccessKey,
@@ -356,6 +360,12 @@ export default class ObsyncPlugin extends Plugin {
     for (const [path, fileState] of Object.entries(this.settings.syncState.files)) {
       if (fileState.deleted) {
         delete this.settings.syncState.files[path];
+      }
+    }
+
+    for (const [path, directoryState] of Object.entries(this.settings.syncState.directories ?? {})) {
+      if (directoryState.deleted) {
+        delete this.settings.syncState.directories?.[path];
       }
     }
   }
@@ -408,6 +418,7 @@ export default class ObsyncPlugin extends Plugin {
       schemaVersion: 1,
       endpoint: this.settings.endpoint,
       bucket: this.settings.bucket,
+      addressingStyle: this.settings.addressingStyle,
       region: this.settings.region,
       rootPrefix: this.settings.rootPrefix,
       accountKey: this.settings.accountKey,
@@ -429,6 +440,7 @@ export default class ObsyncPlugin extends Plugin {
     await this.updateSettings({
       endpoint: config.endpoint,
       bucket: config.bucket,
+      addressingStyle: config.addressingStyle || "auto",
       region: config.region,
       rootPrefix: config.rootPrefix,
       accountKey: config.accountKey,
@@ -487,6 +499,7 @@ function parseConnectionConfig(configText: string): ConnectionConfig {
     schemaVersion: 1 as const,
     endpoint: readRequiredString(parsed, "endpoint"),
     bucket: readRequiredString(parsed, "bucket"),
+    addressingStyle: readAddressingStyle(parsed, "addressingStyle", "auto"),
     region: readOptionalString(parsed, "region", "auto"),
     rootPrefix: readOptionalString(parsed, "rootPrefix", "obsync/v1"),
     accountKey: readOptionalString(parsed, "accountKey", "default"),
@@ -501,6 +514,20 @@ function parseConnectionConfig(configText: string): ConnectionConfig {
   }
 
   return config;
+}
+
+function readAddressingStyle(record: Record<string, unknown>, key: string, fallback: S3AddressingStyle): S3AddressingStyle {
+  const value = record[key];
+
+  if (value === undefined || value === null || value === "") {
+    return fallback;
+  }
+
+  if (value === "auto" || value === "path" || value === "virtual-hosted") {
+    return value;
+  }
+
+  throw new Error(`连接配置字段 ${key} 格式不正确。`);
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {

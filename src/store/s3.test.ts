@@ -111,12 +111,76 @@ describe("S3ObjectStore", () => {
     expect(requests).toHaveLength(2);
     expect(requests[1]?.url).toContain("continuation-token=page+2");
   });
+
+  test("uses virtual-hosted style automatically for Aliyun OSS endpoints", async () => {
+    const requests: HttpRequest[] = [];
+    const store = createStore(async (request) => {
+      requests.push(request);
+      return {
+        status: 200,
+        text: "",
+        arrayBuffer: new ArrayBuffer(0),
+      };
+    }, {
+      endpoint: "https://oss-cn-beijing.aliyuncs.com",
+      bucket: "cohere-test",
+      region: "oss-cn-beijing",
+    });
+
+    await store.writeObject("files/notes/today.md", new TextEncoder().encode("hello"));
+
+    expect(requests[0]?.url).toBe("https://cohere-test.oss-cn-beijing.aliyuncs.com/obsync/v1/vaults/vlt_TEST/files/notes/today.md");
+  });
+
+  test("can force path style addressing", async () => {
+    const requests: HttpRequest[] = [];
+    const store = createStore(async (request) => {
+      requests.push(request);
+      return {
+        status: 200,
+        text: "",
+        arrayBuffer: new ArrayBuffer(0),
+      };
+    }, {
+      addressingStyle: "path",
+      endpoint: "https://oss-cn-beijing.aliyuncs.com",
+      bucket: "cohere-test",
+    });
+
+    await store.writeObject("files/notes/today.md", new TextEncoder().encode("hello"));
+
+    expect(requests[0]?.url).toBe("https://oss-cn-beijing.aliyuncs.com/cohere-test/obsync/v1/vaults/vlt_TEST/files/notes/today.md");
+  });
+
+  test("can force virtual-hosted style addressing", async () => {
+    const requests: HttpRequest[] = [];
+    const store = createStore(async (request) => {
+      requests.push(request);
+      return {
+        status: 200,
+        text: "",
+        arrayBuffer: new ArrayBuffer(0),
+      };
+    }, {
+      addressingStyle: "virtual-hosted",
+      endpoint: "https://s3.example.com",
+      bucket: "cohere-test",
+    });
+
+    await store.writeObject("files/notes/today.md", new TextEncoder().encode("hello"));
+
+    expect(requests[0]?.url).toBe("https://cohere-test.s3.example.com/obsync/v1/vaults/vlt_TEST/files/notes/today.md");
+  });
 });
 
-function createStore(request: (request: HttpRequest) => Promise<{ status: number; text: string; arrayBuffer: ArrayBuffer }>) {
+function createStore(
+  request: (request: HttpRequest) => Promise<{ status: number; text: string; arrayBuffer: ArrayBuffer }>,
+  options: Partial<ConstructorParameters<typeof S3ObjectStore>[0]> = {},
+) {
   return new S3ObjectStore({
     endpoint: "https://s3.example.com",
     bucket: "my-bucket",
+    addressingStyle: "auto",
     region: "auto",
     accessKeyId: "AKIA_TEST",
     secretAccessKey: "SECRET_TEST",
@@ -125,5 +189,6 @@ function createStore(request: (request: HttpRequest) => Promise<{ status: number
     deviceId: "dev_TEST",
     now: () => 1000,
     request,
+    ...options,
   });
 }

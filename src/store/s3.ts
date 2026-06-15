@@ -17,6 +17,7 @@ interface HttpResponse {
 interface S3ObjectStoreOptions {
   endpoint: string;
   bucket: string;
+  addressingStyle: S3AddressingStyle;
   region: string;
   accessKeyId: string;
   secretAccessKey: string;
@@ -26,6 +27,8 @@ interface S3ObjectStoreOptions {
   now(): number;
   request(request: HttpRequest): Promise<HttpResponse>;
 }
+
+export type S3AddressingStyle = "auto" | "path" | "virtual-hosted";
 
 export class S3ObjectStore implements ObjectStore {
   private options: S3ObjectStoreOptions;
@@ -127,7 +130,7 @@ export class S3ObjectStore implements ObjectStore {
   }
 
   private async request(method: string, key: string, body?: Uint8Array, query?: Record<string, string>): Promise<HttpResponse> {
-    const url = createObjectUrl(this.options.endpoint, this.options.bucket, key, query);
+    const url = createObjectUrl(this.options.endpoint, this.options.bucket, key, this.options.addressingStyle, query);
     const bodyBytes = body ?? new Uint8Array();
     const headers = await createSignedHeaders({
       method,
@@ -148,11 +151,41 @@ export class S3ObjectStore implements ObjectStore {
   }
 }
 
-function createObjectUrl(endpoint: string, bucket: string, key: string, query?: Record<string, string>): string {
+function createObjectUrl(endpoint: string, bucket: string, key: string, addressingStyle: S3AddressingStyle, query?: Record<string, string>): string {
   const base = endpoint.replace(/\/+$/g, "");
-  const path = key ? `${encodePathPart(bucket)}/${encodeKey(key)}` : encodePathPart(bucket);
   const search = query ? `?${new URLSearchParams(query).toString()}` : "";
+
+  if (resolveAddressingStyle(endpoint, addressingStyle) === "virtual-hosted") {
+    const url = new URL(base);
+    url.hostname = `${bucket}.${url.hostname}`;
+    const path = key ? encodeKey(key) : "";
+    return `${url.origin}${url.pathname.replace(/\/+$/g, "")}/${path}${search}`;
+  }
+
+  const path = key ? `${encodePathPart(bucket)}/${encodeKey(key)}` : encodePathPart(bucket);
   return `${base}/${path}${search}`;
+}
+
+function resolveAddressingStyle(endpoint: string, addressingStyle: S3AddressingStyle): Exclude<S3AddressingStyle, "auto"> {
+  if (addressingStyle !== "auto") {
+    return addressingStyle;
+  }
+
+  const hostname = safeHostname(endpoint);
+
+  if (hostname.endsWith(".aliyuncs.com") || hostname.endsWith(".myqcloud.com")) {
+    return "virtual-hosted";
+  }
+
+  return "path";
+}
+
+function safeHostname(endpoint: string): string {
+  try {
+    return new URL(endpoint).hostname.toLowerCase();
+  } catch {
+    return "";
+  }
 }
 
 function encodeKey(key: string): string {

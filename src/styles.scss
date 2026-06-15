@@ -125,14 +125,16 @@
   @apply w-80 shrink-0;
 }
 
-.obsync-control input {
+.obsync-control input,
+.obsync-control select {
   @apply h-9 w-full min-w-0 rounded-md px-3 py-2 text-sm outline-none transition;
   background: var(--background-primary);
   border: 1px solid var(--background-modifier-border);
   color: var(--text-normal);
 }
 
-.obsync-control input:focus {
+.obsync-control input:focus,
+.obsync-control select:focus {
   border-color: var(--interactive-accent);
   box-shadow: 0 0 0 2px var(--background-modifier-border-focus);
 }

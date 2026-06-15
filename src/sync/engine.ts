@@ -256,6 +256,7 @@ async function applyConflict(item: PlannedFile, input: SyncOnceInput, result: Sy
 
 export interface ReleaseDeletedContentResult {
   deletedTombstones: number;
+  deletedDirectoryTombstones: number;
   deletedBlobs: number;
   locked: boolean;
 }
@@ -264,14 +265,16 @@ export async function releaseDeletedContent(input: { store: ObjectStore; now(): 
   const locked = await input.store.acquireLock();
 
   if (!locked) {
-    return { deletedTombstones: 0, deletedBlobs: 0, locked: true };
+    return { deletedTombstones: 0, deletedDirectoryTombstones: 0, deletedBlobs: 0, locked: true };
   }
 
   try {
     const manifest = normalizeManifest(await input.store.readManifest());
     const deletedTombstones = Object.keys(manifest.deleted).length;
+    const deletedDirectoryTombstones = Object.keys(manifest.deletedDirectories).length;
 
     manifest.deleted = {};
+    manifest.deletedDirectories = {};
     const referencedHashes = new Set(Object.values(manifest.paths).map((entry) => entry.contentHash));
     const knownBlobKeys = new Set(Object.values(manifest.blobs).map((entry) => entry.key));
     const listedBlobKeys = input.store.listObjectKeys ? await input.store.listObjectKeys("blobs/sha256/") : [];
@@ -291,7 +294,7 @@ export async function releaseDeletedContent(input: { store: ObjectStore; now(): 
     manifest.updatedAt = input.now();
     await input.store.writeManifest(manifest);
 
-    return { deletedTombstones, deletedBlobs, locked: false };
+    return { deletedTombstones, deletedDirectoryTombstones, deletedBlobs, locked: false };
   } finally {
     await input.store.releaseLock();
   }

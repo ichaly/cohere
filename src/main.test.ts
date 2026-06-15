@@ -154,6 +154,7 @@ describe("connection config import and export", () => {
       schemaVersion: 1,
       endpoint: "https://example.com",
       bucket: "vault",
+      addressingStyle: "auto",
       region: "auto",
       rootPrefix: "obsync/v2",
       accountKey: "team",
@@ -175,6 +176,7 @@ describe("connection config import and export", () => {
       schemaVersion: 1,
       endpoint: "https://r2.example.com",
       bucket: "shared-vault",
+      addressingStyle: "virtual-hosted",
       region: "auto",
       rootPrefix: "obsync/v2",
       accountKey: "team",
@@ -185,6 +187,7 @@ describe("connection config import and export", () => {
     expect(plugin.settings).toMatchObject({
       endpoint: "https://r2.example.com",
       bucket: "shared-vault",
+      addressingStyle: "virtual-hosted",
       region: "auto",
       rootPrefix: "obsync/v2",
       accountKey: "team",
@@ -263,6 +266,7 @@ function createPlugin(settings: Partial<TestSettings> = {}): TestPlugin {
   plugin.settings = {
     endpoint: "https://example.com",
     bucket: "vault",
+    addressingStyle: "auto",
     region: "auto",
     accessKeyId: "key",
     secretAccessKey: "secret",
@@ -300,6 +304,7 @@ type TestPlugin = {
 interface TestSettings {
   endpoint: string;
   bucket: string;
+  addressingStyle: "auto" | "path" | "virtual-hosted";
   region: string;
   accessKeyId: string;
   secretAccessKey: string;

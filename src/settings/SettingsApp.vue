@@ -5,6 +5,7 @@ import { computed, ref, watchEffect } from "vue";
 type ObsyncSettings = {
   endpoint: string;
   bucket: string;
+  addressingStyle: "auto" | "path" | "virtual-hosted";
   region: string;
   accessKeyId: string;
   secretAccessKey: string;
@@ -94,6 +95,23 @@ watchEffect(() => {
             placeholder="ideabase"
             @input="emit('update', { bucket: ($event.target as HTMLInputElement).value.trim() })"
           />
+        </div>
+      </div>
+
+      <div class="obsync-row">
+        <div class="obsync-row-copy">
+          <h3>地址风格</h3>
+          <p>自动适配常见服务，也可手动指定请求地址格式。</p>
+        </div>
+        <div class="obsync-control">
+          <select
+            :value="props.settings.addressingStyle"
+            @change="emit('update', { addressingStyle: ($event.target as HTMLSelectElement).value as ObsyncSettings['addressingStyle'] })"
+          >
+            <option value="auto">自动</option>
+            <option value="path">路径风格</option>
+            <option value="virtual-hosted">虚拟主机风格</option>
+          </select>
         </div>
       </div>
 

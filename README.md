@@ -28,12 +28,24 @@ Cohere 用于通过 OSS / S3 兼容对象存储同步当前 vault 文件。
 
 同步端点填写服务商提供的 **S3 API Endpoint**。
 
+地址风格默认选择 `自动`。如果服务商明确要求虚拟主机风格地址，请选择 `Virtual Hosted Style`。
+
 ### Cloudflare R2
 
 ```text
 Endpoint: https://<account-id>.r2.cloudflarestorage.com
 Region: auto
 Bucket: <桶名称>
+地址风格: 自动
+```
+
+### 阿里云 OSS
+
+```text
+Endpoint: https://oss-<region>.aliyuncs.com
+Region: oss-<region>
+Bucket: <桶名称>
+地址风格: Virtual Hosted Style
 ```
 
 ### 七牛云
@@ -42,6 +54,7 @@ Bucket: <桶名称>
 Endpoint: https://s3.<region>.qiniucs.com
 Region: <region>
 Bucket: <桶名称>
+地址风格: 自动
 ```
 
 ## 本地开发

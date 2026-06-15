@@ -644,6 +644,12 @@ describe("sync engine", () => {
       previousVersion: "ver_deleted",
       deletedBy: "dev_mac",
     };
+    store.manifest.deletedDirectories["notes/empty"] = {
+      deletedAt: 1000,
+      deletedRevision: 3,
+      previousVersion: "ver_empty",
+      deletedBy: "dev_mac",
+    };
     await store.putText(blobObjectKey(keptHash), "kept");
     await store.putText(blobObjectKey(deletedHash), "deleted");
     await store.putText(blobObjectKey(orphanHash), "orphan");
@@ -651,8 +657,10 @@ describe("sync engine", () => {
     const result = await releaseDeletedContent({ store, now: () => 5000 });
 
     expect(result.deletedTombstones).toBe(1);
+    expect(result.deletedDirectoryTombstones).toBe(1);
     expect(result.deletedBlobs).toBe(2);
     expect(store.manifest.deleted["notes/deleted.md"]).toBeUndefined();
+    expect(store.manifest.deletedDirectories["notes/empty"]).toBeUndefined();
     expect(store.objects[blobObjectKey(keptHash)]).toBeDefined();
     expect(store.objects[blobObjectKey(deletedHash)]).toBeUndefined();
     expect(store.objects[blobObjectKey(orphanHash)]).toBeUndefined();
@@ -669,14 +677,22 @@ describe("sync engine", () => {
       previousVersion: "ver_deleted",
       deletedBy: "dev_mac",
     };
+    store.manifest.deletedDirectories["notes/empty"] = {
+      deletedAt: 1000,
+      deletedRevision: 3,
+      previousVersion: "ver_empty",
+      deletedBy: "dev_mac",
+    };
     await store.putText(blobObjectKey(deletedHash), "deleted");
 
     const result = await releaseDeletedContent({ store, now: () => 5000 });
 
     expect(result.locked).toBe(true);
     expect(result.deletedTombstones).toBe(0);
+    expect(result.deletedDirectoryTombstones).toBe(0);
     expect(result.deletedBlobs).toBe(0);
     expect(store.manifest.deleted["notes/deleted.md"]).toBeDefined();
+    expect(store.manifest.deletedDirectories["notes/empty"]).toBeDefined();
     expect(store.objects[blobObjectKey(deletedHash)]).toBeDefined();
   });
 
