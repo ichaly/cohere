@@ -120,12 +120,9 @@
   color: var(--text-normal);
 }
 
-.obsync-control {
-  @apply w-60 shrink-0;
-}
-
+.obsync-control,
 .obsync-control-wide {
-  @apply w-80;
+  @apply w-80 shrink-0;
 }
 
 .obsync-control input {
@@ -211,7 +208,7 @@
 }
 
 .obsync-secondary {
-  @apply mt-2 shrink-0 cursor-pointer rounded-md px-3 py-2 text-sm font-semibold leading-5 transition;
+  @apply shrink-0 cursor-pointer rounded-md px-3 py-2 text-sm font-semibold leading-5 transition;
   background: var(--background-primary);
   border: 1px solid var(--background-modifier-border);
   color: var(--text-normal);
@@ -259,6 +256,22 @@
 
   .obsync-row-copy {
     @apply mb-0;
+  }
+}
+
+.obsync-release-control {
+  @apply flex items-center justify-end;
+}
+
+.obsync-device-control {
+  @apply flex items-center gap-3;
+
+  .obsync-link-button {
+    @apply h-9;
+  }
+
+  input {
+    @apply min-w-0 flex-1;
   }
 }
 
@@ -348,8 +361,16 @@
     @apply w-full;
   }
 
-  .obsync-secondary {
-    @apply mt-2;
+  .obsync-release-control {
+    @apply justify-stretch;
+  }
+
+  .obsync-device-control {
+    @apply flex-col items-stretch gap-2;
+
+    .obsync-link-button {
+      @apply w-full;
+    }
   }
 
   .obsync-row:not(.obsync-toggle-row) > .obsync-switch {

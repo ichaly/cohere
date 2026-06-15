@@ -171,7 +171,7 @@ watchEffect(() => {
           <h3>释放空间</h3>
           <p>清理已删除文件的远端记录和不再引用的 Blob。</p>
         </div>
-        <div class="obsync-control">
+        <div class="obsync-control obsync-release-control">
           <button type="button" class="obsync-secondary" @click="emit('releaseDeletedContent')">
             释放已删除内容
           </button>
@@ -220,19 +220,17 @@ watchEffect(() => {
     <section class="obsync-card">
       <div class="obsync-row">
         <div class="obsync-row-copy">
-          <div class="obsync-row-title">
-            <h3>设备名称</h3>
-            <button type="button" class="obsync-link-button" @click="emit('copyDeviceId')">
-              复制设备 ID
-            </button>
-          </div>
+          <h3>设备名称</h3>
           <p>用于冲突文件名和界面展示。</p>
         </div>
-        <div class="obsync-control">
-        <input
-          :value="props.settings.deviceName"
-          @input="emit('update', { deviceName: ($event.target as HTMLInputElement).value.trim() })"
-        />
+        <div class="obsync-control obsync-device-control">
+          <button type="button" class="obsync-link-button" @click="emit('copyDeviceId')">
+            复制设备 ID
+          </button>
+          <input
+            :value="props.settings.deviceName"
+            @input="emit('update', { deviceName: ($event.target as HTMLInputElement).value.trim() })"
+          />
         </div>
       </div>
 
