@@ -1,5 +1,5 @@
 {
-  "name": "obsync",
+  "name": "cohere",
   "version": "0.1.2",
   "description": "Plugin for OSS / S3-compatible vault sync.",
   "main": "main.js",
