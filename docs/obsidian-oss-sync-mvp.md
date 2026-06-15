@@ -52,7 +52,7 @@ accountKey = normalize(user input, default: "default")
 vaultKey = normalize(user input, default: normalize(app.vault.getName()))
 
 vaultId = "vlt_" + base32url(
-  sha256("obsync-vault-v1:" + accountKey + ":" + vaultKey)
+  sha256("cohere-vault-v1:" + accountKey + ":" + vaultKey)
 ).slice(0, 26)
 ```
 
@@ -113,7 +113,7 @@ deviceId = "dev_" + base32url(randomBytes(16)).slice(0, 26)
   "schemaVersion": 1,
   "endpoint": "https://oss-cn-example.aliyuncs.com",
   "bucket": "my-obsidian-sync",
-  "rootPrefix": "obsync/v1",
+  "rootPrefix": "cohere/v1",
   "accountKey": "default",
   "vaultKey": "personal-notes",
   "vaultId": "vlt_7K4N9J2Q8X5M3P1A"
@@ -138,13 +138,13 @@ oss://<bucket>/<rootPrefix>/vaults/<vaultId>/
 默认 `rootPrefix`：
 
 ```text
-obsync/v1
+cohere/v1
 ```
 
 完整结构：
 
 ```text
-obsync/
+cohere/
   v1/
     vaults/
       <vaultId>/

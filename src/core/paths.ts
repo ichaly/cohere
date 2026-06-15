@@ -12,7 +12,7 @@ export interface RemoteLayout {
 }
 
 export function createRemoteLayout(input: RemoteLayoutInput): RemoteLayout {
-  const rootPrefix = trimSlashes(input.rootPrefix || "obsync/v1");
+  const rootPrefix = trimSlashes(input.rootPrefix || "cohere/v1");
   const vaultPrefix = `${rootPrefix}/vaults/${input.vaultId}`;
 
   return {

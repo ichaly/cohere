@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import { TFile, TFolder } from "obsidian";
-import ObsyncPlugin from "./main";
+import CoherePlugin from "./main";
 import { ObsidianVaultIO } from "./vault-io";
 
 vi.mock("obsidian", () => ({
@@ -144,7 +144,7 @@ describe("connection config import and export", () => {
     const plugin = createPlugin({
       accessKeyId: "AKIA_TEST",
       secretAccessKey: "SECRET_TEST",
-      rootPrefix: "obsync/v2",
+      rootPrefix: "cohere/v2",
       accountKey: "team",
       vaultKey: "notes",
       vaultId: "vlt_notes",
@@ -156,7 +156,7 @@ describe("connection config import and export", () => {
       bucket: "vault",
       addressingStyle: "auto",
       region: "auto",
-      rootPrefix: "obsync/v2",
+      rootPrefix: "cohere/v2",
       accountKey: "team",
       vaultKey: "notes",
       vaultId: "vlt_notes",
@@ -178,7 +178,7 @@ describe("connection config import and export", () => {
       bucket: "shared-vault",
       addressingStyle: "virtual-hosted",
       region: "auto",
-      rootPrefix: "obsync/v2",
+      rootPrefix: "cohere/v2",
       accountKey: "team",
       vaultKey: "product",
       vaultId: "ignored-remote-id",
@@ -189,7 +189,7 @@ describe("connection config import and export", () => {
       bucket: "shared-vault",
       addressingStyle: "virtual-hosted",
       region: "auto",
-      rootPrefix: "obsync/v2",
+      rootPrefix: "cohere/v2",
       accountKey: "team",
       vaultKey: "product",
       accessKeyId: "existing-key",
@@ -261,7 +261,7 @@ describe("vault IO compatibility", () => {
 });
 
 function createPlugin(settings: Partial<TestSettings> = {}): TestPlugin {
-  const plugin = Object.create(ObsyncPlugin.prototype) as TestPlugin;
+  const plugin = Object.create(CoherePlugin.prototype) as TestPlugin;
   plugin.app = { vault: { getName: () => "ichaly" } };
   plugin.settings = {
     endpoint: "https://example.com",
@@ -270,7 +270,7 @@ function createPlugin(settings: Partial<TestSettings> = {}): TestPlugin {
     region: "auto",
     accessKeyId: "key",
     secretAccessKey: "secret",
-    rootPrefix: "obsync/v1",
+    rootPrefix: "cohere/v1",
     accountKey: "default",
     vaultKey: "vault",
     vaultId: "vlt_test",

@@ -1,40 +1,40 @@
 @reference "tailwindcss";
 
-.obsync-settings-root {
+.cohere-settings-root {
   container-type: inline-size;
 }
 
-.obsync-status-bar-item {
+.cohere-status-bar-item {
   @apply flex items-center gap-1 text-xs;
   color: var(--text-muted);
 }
 
-.obsync-status-bar-item.is-hidden {
+.cohere-status-bar-item.is-hidden {
   display: none;
 }
 
-.obsync-panel {
+.cohere-panel {
   @apply w-full max-w-3xl pb-6;
   color: var(--text-normal);
 }
 
-.obsync-panel *,
-.obsync-panel *::before,
-.obsync-panel *::after {
+.cohere-panel *,
+.cohere-panel *::before,
+.cohere-panel *::after {
   @apply box-border;
 }
 
-.obsync-header {
+.cohere-header {
   @apply mb-4 flex items-start justify-between gap-3;
 }
 
-.obsync-subtitle,
-.obsync-row-copy p {
+.cohere-subtitle,
+.cohere-row-copy p {
   @apply m-0;
   color: var(--text-muted);
 }
 
-.obsync-title {
+.cohere-title {
   @apply m-0 p-0 text-2xl font-bold leading-tight;
   color: var(--text-normal);
   margin-inline-start: 0 !important;
@@ -43,20 +43,20 @@
   text-indent: 0;
 }
 
-.obsync-subtitle {
+.cohere-subtitle {
   @apply mt-1 text-sm leading-6;
 }
 
-.obsync-card {
+.cohere-card {
   @apply mb-5 rounded-xl p-0;
   background: var(--background-secondary);
 }
 
-.obsync-row {
+.cohere-row {
   @apply relative flex items-center justify-between gap-5 px-5 py-4;
 }
 
-.obsync-row::after {
+.cohere-row::after {
   content: "";
   position: absolute;
   inset-inline: 1.25rem;
@@ -65,11 +65,11 @@
   background: var(--background-modifier-border);
 }
 
-.obsync-row:last-child::after {
+.cohere-row:last-child::after {
   display: none;
 }
 
-.obsync-row-copy {
+.cohere-row-copy {
   @apply min-w-0 flex-1 p-0 text-left;
   margin-inline-start: 0 !important;
   padding-inline-start: 0 !important;
@@ -90,11 +90,11 @@
   }
 }
 
-.obsync-row-title {
+.cohere-row-title {
   @apply flex items-center justify-between gap-3;
 }
 
-.obsync-inline-switch {
+.cohere-inline-switch {
   @apply flex h-6 shrink-0 cursor-pointer items-center gap-2 self-center whitespace-nowrap text-sm font-medium leading-none;
   color: var(--text-muted);
 
@@ -102,12 +102,12 @@
     @apply flex h-6 items-center;
   }
 
-  .obsync-switch {
+  .cohere-switch {
     @apply mt-0;
   }
 }
 
-.obsync-link-button {
+.cohere-link-button {
   @apply shrink-0 cursor-pointer rounded px-2 py-1 text-xs font-semibold leading-4 transition;
   background: transparent;
   border: 0;
@@ -115,35 +115,35 @@
   color: var(--text-muted);
 }
 
-.obsync-link-button:hover {
+.cohere-link-button:hover {
   background: var(--background-modifier-hover);
   color: var(--text-normal);
 }
 
-.obsync-control,
-.obsync-control-wide {
+.cohere-control,
+.cohere-control-wide {
   @apply w-80 shrink-0;
 }
 
-.obsync-control input,
-.obsync-control select {
+.cohere-control input,
+.cohere-control select {
   @apply h-9 w-full min-w-0 rounded-md px-3 py-2 text-sm outline-none transition;
   background: var(--background-primary);
   border: 1px solid var(--background-modifier-border);
   color: var(--text-normal);
 }
 
-.obsync-control input:focus,
-.obsync-control select:focus {
+.cohere-control input:focus,
+.cohere-control select:focus {
   border-color: var(--interactive-accent);
   box-shadow: 0 0 0 2px var(--background-modifier-border-focus);
 }
 
-.obsync-control input::placeholder {
+.cohere-control input::placeholder {
   color: var(--text-faint);
 }
 
-.obsync-secret-field {
+.cohere-secret-field {
   @apply flex h-9 min-w-0 items-center rounded-md;
   background: var(--background-primary);
   border: 1px solid var(--background-modifier-border);
@@ -163,7 +163,7 @@
     box-shadow: none;
   }
 
-  .obsync-icon-button {
+  .cohere-icon-button {
     @apply mr-1 flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded transition;
     appearance: none;
     background: transparent !important;
@@ -174,59 +174,59 @@
     padding: 0 !important;
   }
 
-  .obsync-icon-button .svg-icon,
-  .obsync-icon-button svg {
+  .cohere-icon-button .svg-icon,
+  .cohere-icon-button svg {
     width: 24px !important;
     height: 24px !important;
     stroke-width: 2;
   }
 
-  .obsync-icon-button:hover {
+  .cohere-icon-button:hover {
     background: var(--background-modifier-hover);
     color: var(--text-normal);
   }
 
-  .obsync-icon-button:focus,
-  .obsync-icon-button:focus-visible {
+  .cohere-icon-button:focus,
+  .cohere-icon-button:focus-visible {
     box-shadow: none !important;
     outline: none;
   }
 }
 
-.obsync-readonly {
+.cohere-readonly {
   @apply flex min-w-0 shrink-0 items-center justify-end gap-3;
   width: min(380px, 58%);
 }
 
-.obsync-readonly code {
+.cohere-readonly code {
   @apply min-w-0 flex-1 break-all text-right text-xs leading-5;
   color: var(--text-normal);
 }
 
-.obsync-primary {
+.cohere-primary {
   @apply shrink-0 cursor-pointer rounded-md border-0 px-3 py-2 text-sm font-semibold leading-5 transition;
   background: var(--interactive-accent);
   color: var(--text-on-accent);
 }
 
-.obsync-secondary {
+.cohere-secondary {
   @apply shrink-0 cursor-pointer rounded-md px-3 py-2 text-sm font-semibold leading-5 transition;
   background: var(--background-primary);
   border: 1px solid var(--background-modifier-border);
   color: var(--text-normal);
 }
 
-.obsync-primary:hover,
-.obsync-secondary:hover {
+.cohere-primary:hover,
+.cohere-secondary:hover {
   @apply opacity-90;
 }
 
-.obsync-primary:active,
-.obsync-secondary:active {
+.cohere-primary:active,
+.cohere-secondary:active {
   @apply translate-y-px;
 }
 
-.obsync-switch {
+.cohere-switch {
   @apply relative block h-6 w-11 shrink-0 cursor-pointer;
 
   input {
@@ -253,22 +253,22 @@
   }
 }
 
-.obsync-toggle-row {
+.cohere-toggle-row {
   @apply flex items-center justify-between gap-5;
 
-  .obsync-row-copy {
+  .cohere-row-copy {
     @apply mb-0;
   }
 }
 
-.obsync-release-control {
+.cohere-release-control {
   @apply flex items-center justify-end;
 }
 
-.obsync-device-control {
+.cohere-device-control {
   @apply flex items-center gap-3;
 
-  .obsync-link-button {
+  .cohere-link-button {
     @apply h-9;
   }
 
@@ -277,15 +277,15 @@
   }
 }
 
-.obsync-row-block {
+.cohere-row-block {
   @apply block;
 }
 
-.obsync-row-block .obsync-row-copy {
+.cohere-row-block .cohere-row-copy {
   @apply mb-3;
 }
 
-.obsync-config-display {
+.cohere-config-display {
   @apply min-h-48 rounded-md p-3 font-mono text-xs leading-5;
   background: var(--background-primary);
   border: 1px solid var(--background-modifier-border);
@@ -294,94 +294,94 @@
   white-space: pre-wrap;
 }
 
-.obsync-action-row {
+.cohere-action-row {
   @apply mt-3 flex gap-2;
 }
 
-.obsync-action-row button {
+.cohere-action-row button {
   @apply flex-1;
 }
 
-.obsync-action-row .obsync-secondary {
+.cohere-action-row .cohere-secondary {
   @apply mt-0;
 }
 
 @container (max-width: 640px) {
-  .obsync-header {
+  .cohere-header {
     @apply block;
     padding-top: max(2rem, env(safe-area-inset-top, 0px));
   }
 
-  .obsync-card {
+  .cohere-card {
     @apply mb-4 rounded-lg;
   }
 
-  .obsync-row {
+  .cohere-row {
     @apply block px-4 py-4;
   }
 
-  .obsync-row::after {
+  .cohere-row::after {
     inset-inline: 1rem;
   }
 
-  .obsync-row-copy {
+  .cohere-row-copy {
     @apply mb-2;
   }
 
-  .obsync-toggle-row {
+  .cohere-toggle-row {
     @apply flex gap-4;
 
-    .obsync-row-copy {
+    .cohere-row-copy {
       @apply mb-0;
     }
   }
 
-  .obsync-row-title {
+  .cohere-row-title {
     @apply items-center;
   }
 
-  .obsync-row:not(.obsync-toggle-row) .obsync-inline-switch .obsync-switch {
+  .cohere-row:not(.cohere-toggle-row) .cohere-inline-switch .cohere-switch {
     @apply mt-0;
   }
 
-  .obsync-control,
-  .obsync-control-wide,
-  .obsync-readonly {
+  .cohere-control,
+  .cohere-control-wide,
+  .cohere-readonly {
     @apply w-full;
   }
 
-  .obsync-readonly {
+  .cohere-readonly {
     @apply flex-col items-stretch gap-2;
   }
 
-  .obsync-readonly code {
+  .cohere-readonly code {
     @apply text-left;
   }
 
-  .obsync-primary,
-  .obsync-secondary {
+  .cohere-primary,
+  .cohere-secondary {
     @apply w-full;
   }
 
-  .obsync-release-control {
+  .cohere-release-control {
     @apply justify-stretch;
   }
 
-  .obsync-device-control {
+  .cohere-device-control {
     @apply flex-col items-stretch gap-2;
 
-    .obsync-link-button {
+    .cohere-link-button {
       @apply w-full;
     }
   }
 
-  .obsync-row:not(.obsync-toggle-row) > .obsync-switch {
+  .cohere-row:not(.cohere-toggle-row) > .cohere-switch {
     @apply mt-2;
   }
 }
 
 @media (max-width: 560px) {
-  .obsync-title {
+  .cohere-title {
     @apply text-xl;
   }
 }

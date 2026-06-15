@@ -2,11 +2,15 @@
 
 Cohere is a community plugin for syncing vault files through OSS / S3-compatible object storage. It supports manual sync, automatic sync, deletion sync, conflict copies, optional empty directory sync, and connection configuration import/export.
 
+Cohere works with S3-compatible providers such as Cloudflare R2, Aliyun OSS, Tencent COS, Qiniu Cloud Kodo, MinIO, and other compatible object storage services.
+
 The plugin ID is `cohere`.
 
 ## 中文说明
 
 Cohere 用于通过 OSS / S3 兼容对象存储同步当前 vault 文件。
+
+Cohere 适合希望通过对象存储实现笔记同步、多端同步、私有云同步的用户，支持 S3 / OSS 兼容服务，例如阿里云 OSS、腾讯云 COS、七牛云、Cloudflare R2、MinIO 等。
 
 ![Cohere banner](docs/assets/cohere-banner.webp)
 

@@ -7,7 +7,7 @@ import { releaseDeletedContent, syncOnce, type LocalSyncState } from "./sync/eng
 import { S3ObjectStore, type S3AddressingStyle } from "./store/s3";
 import { ObsidianVaultIO } from "./vault-io";
 
-interface ObsyncSettings {
+interface CohereSettings {
   endpoint: string;
   bucket: string;
   addressingStyle: S3AddressingStyle;
@@ -40,14 +40,14 @@ interface ConnectionConfig {
   secretAccessKey?: string;
 }
 
-const DEFAULT_SETTINGS: ObsyncSettings = {
+const DEFAULT_SETTINGS: CohereSettings = {
   endpoint: "",
   bucket: "",
   addressingStyle: "auto",
   region: "",
   accessKeyId: "",
   secretAccessKey: "",
-  rootPrefix: "obsync/v2",
+  rootPrefix: "cohere/v1",
   accountKey: "default",
   vaultKey: "",
   vaultId: "",
@@ -66,8 +66,8 @@ const FILE_EVENT_SUPPRESSION_MS = 1_000;
 
 type SyncTrigger = "manual" | "auto";
 
-export default class ObsyncPlugin extends Plugin {
-  settings: ObsyncSettings = DEFAULT_SETTINGS;
+export default class CoherePlugin extends Plugin {
+  settings: CohereSettings = DEFAULT_SETTINGS;
   private autoSyncTimer: number | null = null;
   private autoSyncRunning = false;
   private autoSyncQueued = false;
@@ -80,7 +80,7 @@ export default class ObsyncPlugin extends Plugin {
   async onload(): Promise<void> {
     await this.loadSettings();
     this.statusBarItem = this.addStatusBarItem();
-    this.statusBarItem.classList.add("obsync-status-bar-item");
+    this.statusBarItem.classList.add("cohere-status-bar-item");
     this.clearOperationStatus();
 
     this.addCommand({
@@ -91,10 +91,10 @@ export default class ObsyncPlugin extends Plugin {
       },
     });
 
-    const syncRibbonIcon = this.addRibbonIcon("refresh-cw", "Obsync 立即同步", async () => {
+    const syncRibbonIcon = this.addRibbonIcon("refresh-cw", "Cohere 立即同步", async () => {
       await this.syncNow("manual");
     });
-    syncRibbonIcon.classList.add("obsync-ribbon-sync");
+    syncRibbonIcon.classList.add("cohere-ribbon-sync");
     this.app.workspace.onLayoutReady(() => {
       this.moveRibbonIconToBottom(syncRibbonIcon);
     });
@@ -104,7 +104,7 @@ export default class ObsyncPlugin extends Plugin {
       name: "复制连接配置",
       callback: async () => {
         await navigator.clipboard.writeText(JSON.stringify(this.getConnectionConfig(), null, 2));
-        new Notice("Obsync 连接配置已复制。");
+        new Notice("Cohere 连接配置已复制。");
       },
     });
 
@@ -116,7 +116,7 @@ export default class ObsyncPlugin extends Plugin {
       },
     });
 
-    this.addSettingTab(new ObsyncSettingTab(this.app, this));
+    this.addSettingTab(new CohereSettingTab(this.app, this));
     this.registerAutoSyncTriggers();
   }
 
@@ -125,7 +125,7 @@ export default class ObsyncPlugin extends Plugin {
       this.autoSyncQueued = true;
 
       if (trigger === "manual") {
-        this.showNotice("Obsync 正在同步，稍后会再同步一次。");
+        this.showNotice("Cohere 正在同步，稍后会再同步一次。");
       }
 
       return;
@@ -135,7 +135,7 @@ export default class ObsyncPlugin extends Plugin {
     this.startFileEventSuppression();
 
     try {
-      await this.runConfiguredOperation("同步中...", "Obsync 同步失败", async () => {
+      await this.runConfiguredOperation("同步中...", "Cohere 同步失败", async () => {
         const store = this.createObjectStore();
         const result = await syncOnce({
           vault: new ObsidianVaultIO(this.app),
@@ -157,7 +157,7 @@ export default class ObsyncPlugin extends Plugin {
         }
 
         if (trigger === "manual") {
-          this.showNotice("Obsync 同步完成。");
+          this.showNotice("Cohere 同步完成。");
         }
       }, {
         notifyMissingConfig: trigger === "manual",
@@ -258,7 +258,7 @@ export default class ObsyncPlugin extends Plugin {
 
       this.pruneLocalDeletedState();
       await this.saveSettings();
-      this.showNotice(`Obsync 已释放：清理文件删除记录 ${result.deletedTombstones}，目录删除记录 ${result.deletedDirectoryTombstones}，删除 Blob ${result.deletedBlobs}。`);
+      this.showNotice(`Cohere 已释放：清理文件删除记录 ${result.deletedTombstones}，目录删除记录 ${result.deletedDirectoryTombstones}，删除 Blob ${result.deletedBlobs}。`);
     });
   }
 
@@ -371,15 +371,15 @@ export default class ObsyncPlugin extends Plugin {
   }
 
   async loadSettings(): Promise<void> {
-    const loaded = await this.loadData() as Partial<ObsyncSettings> | null;
+    const loaded = await this.loadData() as Partial<CohereSettings> | null;
     this.settings = Object.assign({}, DEFAULT_SETTINGS, loaded);
 
     if (!this.settings.vaultKey) {
       this.settings.vaultKey = normalizeKey(this.app.vault.getName());
     }
 
-    if (!loaded?.rootPrefix || loaded.rootPrefix === "obsync/v1") {
-      this.settings.rootPrefix = "obsync/v2";
+    if (!loaded?.rootPrefix) {
+      this.settings.rootPrefix = "cohere/v1";
     }
 
     if (!this.settings.deviceId) {
@@ -402,7 +402,7 @@ export default class ObsyncPlugin extends Plugin {
     await this.saveData(this.settings);
   }
 
-  async updateSettings(update: Partial<ObsyncSettings>): Promise<void> {
+  async updateSettings(update: Partial<CohereSettings>): Promise<void> {
     Object.assign(this.settings, update);
     this.settings.accountKey = normalizeKey(this.settings.accountKey || "default");
     this.settings.vaultKey = normalizeKey(this.settings.vaultKey || this.app.vault.getName());
@@ -501,7 +501,7 @@ function parseConnectionConfig(configText: string): ConnectionConfig {
     bucket: readRequiredString(parsed, "bucket"),
     addressingStyle: readAddressingStyle(parsed, "addressingStyle", "auto"),
     region: readOptionalString(parsed, "region", "auto"),
-    rootPrefix: readOptionalString(parsed, "rootPrefix", "obsync/v1"),
+    rootPrefix: readOptionalString(parsed, "rootPrefix", "cohere/v1"),
     accountKey: readOptionalString(parsed, "accountKey", "default"),
     vaultKey: readRequiredString(parsed, "vaultKey"),
     vaultId: readOptionalString(parsed, "vaultId", ""),
@@ -558,11 +558,11 @@ function readOptionalString(record: Record<string, unknown>, key: string, fallba
   return value.trim() || fallback;
 }
 
-class ObsyncSettingTab extends PluginSettingTab {
-  plugin: ObsyncPlugin;
+class CohereSettingTab extends PluginSettingTab {
+  plugin: CoherePlugin;
   vueApp: VueApp<Element> | null = null;
 
-  constructor(app: App, plugin: ObsyncPlugin) {
+  constructor(app: App, plugin: CoherePlugin) {
     super(app, plugin);
     this.plugin = plugin;
   }
@@ -572,15 +572,15 @@ class ObsyncSettingTab extends PluginSettingTab {
     this.vueApp?.unmount();
     containerEl.empty();
 
-    const mountEl = containerEl.createDiv({ cls: "obsync-settings-root" });
-    const settings = reactive(this.plugin.settings) as ObsyncSettings;
+    const mountEl = containerEl.createDiv({ cls: "cohere-settings-root" });
+    const settings = reactive(this.plugin.settings) as CohereSettings;
     const connectionConfig = reactive(this.plugin.getConnectionConfig());
     this.plugin.settings = settings;
 
     this.vueApp = createApp(SettingsApp, {
       settings,
       connectionConfig,
-      onUpdate: async (update: Partial<ObsyncSettings>) => {
+      onUpdate: async (update: Partial<CohereSettings>) => {
         await this.plugin.updateSettings(update);
         Object.assign(connectionConfig, this.plugin.getConnectionConfig());
       },

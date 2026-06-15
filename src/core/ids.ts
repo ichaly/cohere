@@ -11,7 +11,7 @@ export function normalizeKey(value: string): string {
 }
 
 export async function createVaultId(accountKey: string, vaultKey: string): Promise<string> {
-  const input = `obsync-vault-v1:${normalizeKey(accountKey)}:${normalizeKey(vaultKey)}`;
+  const input = `cohere-vault-v1:${normalizeKey(accountKey)}:${normalizeKey(vaultKey)}`;
   const bytes = new TextEncoder().encode(input);
   const hash = await crypto.subtle.digest("SHA-256", bytes);
   return `vlt_${base32Url(new Uint8Array(hash)).slice(0, 26)}`;

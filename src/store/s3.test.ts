@@ -27,7 +27,7 @@ describe("S3ObjectStore", () => {
     await store.writeObject("files/notes/today.md", new TextEncoder().encode("hello"));
 
     expect(requests[0]?.method).toBe("PUT");
-    expect(requests[0]?.url).toBe("https://s3.example.com/my-bucket/obsync/v1/vaults/vlt_TEST/files/notes/today.md");
+    expect(requests[0]?.url).toBe("https://s3.example.com/my-bucket/cohere/v1/vaults/vlt_TEST/files/notes/today.md");
     expect(requests[0]?.headers.Authorization).toContain("AWS4-HMAC-SHA256");
     expect(requests[0]?.headers["x-amz-content-sha256"]).toMatch(/^[a-f0-9]{64}$/);
   });
@@ -46,7 +46,7 @@ describe("S3ObjectStore", () => {
     await store.deleteObject("files/notes/today.md");
 
     expect(requests[0]?.method).toBe("DELETE");
-    expect(requests[0]?.url).toBe("https://s3.example.com/my-bucket/obsync/v1/vaults/vlt_TEST/files/notes/today.md");
+    expect(requests[0]?.url).toBe("https://s3.example.com/my-bucket/cohere/v1/vaults/vlt_TEST/files/notes/today.md");
   });
 
   test("lists object keys under the vault prefix", async () => {
@@ -58,8 +58,8 @@ describe("S3ObjectStore", () => {
         text: [
           "<?xml version=\"1.0\" encoding=\"UTF-8\"?>",
           "<ListBucketResult>",
-          "<Contents><Key>obsync/v1/vaults/vlt_TEST/blobs/sha256/aa/bb/hash1</Key></Contents>",
-          "<Contents><Key>obsync/v1/vaults/vlt_TEST/blobs/sha256/cc/dd/hash2</Key></Contents>",
+          "<Contents><Key>cohere/v1/vaults/vlt_TEST/blobs/sha256/aa/bb/hash1</Key></Contents>",
+          "<Contents><Key>cohere/v1/vaults/vlt_TEST/blobs/sha256/cc/dd/hash2</Key></Contents>",
           "</ListBucketResult>",
         ].join(""),
         arrayBuffer: new ArrayBuffer(0),
@@ -72,7 +72,7 @@ describe("S3ObjectStore", () => {
     ]);
     expect(requests[0]?.method).toBe("GET");
     expect(requests[0]?.url).toBe(
-      "https://s3.example.com/my-bucket?list-type=2&prefix=obsync%2Fv1%2Fvaults%2Fvlt_TEST%2Fblobs%2Fsha256%2F",
+      "https://s3.example.com/my-bucket?list-type=2&prefix=cohere%2Fv1%2Fvaults%2Fvlt_TEST%2Fblobs%2Fsha256%2F",
     );
   });
 
@@ -84,14 +84,14 @@ describe("S3ObjectStore", () => {
         "<ListBucketResult>",
         "<IsTruncated>true</IsTruncated>",
         "<NextContinuationToken>page 2</NextContinuationToken>",
-        "<Contents><Key>obsync/v1/vaults/vlt_TEST/blobs/sha256/aa/bb/hash1</Key></Contents>",
+        "<Contents><Key>cohere/v1/vaults/vlt_TEST/blobs/sha256/aa/bb/hash1</Key></Contents>",
         "</ListBucketResult>",
       ].join(""),
       [
         "<?xml version=\"1.0\" encoding=\"UTF-8\"?>",
         "<ListBucketResult>",
         "<IsTruncated>false</IsTruncated>",
-        "<Contents><Key>obsync/v1/vaults/vlt_TEST/blobs/sha256/cc/dd/hash2</Key></Contents>",
+        "<Contents><Key>cohere/v1/vaults/vlt_TEST/blobs/sha256/cc/dd/hash2</Key></Contents>",
         "</ListBucketResult>",
       ].join(""),
     ];
@@ -129,7 +129,7 @@ describe("S3ObjectStore", () => {
 
     await store.writeObject("files/notes/today.md", new TextEncoder().encode("hello"));
 
-    expect(requests[0]?.url).toBe("https://cohere-test.oss-cn-beijing.aliyuncs.com/obsync/v1/vaults/vlt_TEST/files/notes/today.md");
+    expect(requests[0]?.url).toBe("https://cohere-test.oss-cn-beijing.aliyuncs.com/cohere/v1/vaults/vlt_TEST/files/notes/today.md");
   });
 
   test("can force path style addressing", async () => {
@@ -149,7 +149,7 @@ describe("S3ObjectStore", () => {
 
     await store.writeObject("files/notes/today.md", new TextEncoder().encode("hello"));
 
-    expect(requests[0]?.url).toBe("https://oss-cn-beijing.aliyuncs.com/cohere-test/obsync/v1/vaults/vlt_TEST/files/notes/today.md");
+    expect(requests[0]?.url).toBe("https://oss-cn-beijing.aliyuncs.com/cohere-test/cohere/v1/vaults/vlt_TEST/files/notes/today.md");
   });
 
   test("can force virtual-hosted style addressing", async () => {
@@ -169,7 +169,7 @@ describe("S3ObjectStore", () => {
 
     await store.writeObject("files/notes/today.md", new TextEncoder().encode("hello"));
 
-    expect(requests[0]?.url).toBe("https://cohere-test.s3.example.com/obsync/v1/vaults/vlt_TEST/files/notes/today.md");
+    expect(requests[0]?.url).toBe("https://cohere-test.s3.example.com/cohere/v1/vaults/vlt_TEST/files/notes/today.md");
   });
 });
 
@@ -184,7 +184,7 @@ function createStore(
     region: "auto",
     accessKeyId: "AKIA_TEST",
     secretAccessKey: "SECRET_TEST",
-    rootPrefix: "obsync/v1",
+    rootPrefix: "cohere/v1",
     vaultId: "vlt_TEST",
     deviceId: "dev_TEST",
     now: () => 1000,
