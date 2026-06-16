@@ -512,7 +512,10 @@ function createPlan(
   manifest: RemoteManifest,
   state: LocalSyncState,
 ): PlannedFile[] {
-  const paths = new Set([...Object.keys(localFiles), ...Object.keys(manifest.paths), ...Object.keys(manifest.deleted), ...Object.keys(state.files)]);
+  const paths = new Set(
+    [...Object.keys(localFiles), ...Object.keys(manifest.paths), ...Object.keys(manifest.deleted), ...Object.keys(state.files)]
+      .filter((path) => !isGeneratedConflictPath(path)),
+  );
   const plan: PlannedFile[] = [];
 
   for (const path of paths) {
@@ -717,6 +720,10 @@ async function scanLocalFiles(
   const result: Record<string, { bytes: Uint8Array; hash: string; mtime: number; size: number }> = {};
 
   for (const file of files) {
+    if (isGeneratedConflictPath(file.path)) {
+      continue;
+    }
+
     const previous = state.files[file.path];
     const canReuseHash = Boolean(
       previous?.lastSyncedHash &&
@@ -784,6 +791,10 @@ function createConflictPath(path: string, deviceName: string, timestamp: number)
   }
 
   return `${path.slice(0, dotIndex)}.${suffix}${path.slice(dotIndex)}`;
+}
+
+function isGeneratedConflictPath(path: string): boolean {
+  return /(^|\/)[^/]+\.conflict\.[^/]+\.\d{8}-\d{6}(?:\.[^/.]+)?$/.test(path);
 }
 
 function sanitizePathPart(value: string): string {

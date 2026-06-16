@@ -625,10 +625,64 @@ describe("sync engine", () => {
 
     expect(firstResult.conflicts).toBe(1);
     expect(secondResult.conflicts).toBe(0);
-    expect(secondResult.uploaded).toBe(2);
+    expect(secondResult.uploaded).toBe(1);
     expect(await vault.readText("notes/today.conflict.Mac.19700101-000003.md")).toBe("remote");
     expect(await vault.readText("notes/today.conflict.Mac.19700101-000004.md")).toBe("");
     expect(store.manifest.paths["notes/today.md"]?.contentHash).toBe(await hashText("local"));
+    expect(store.manifest.paths["notes/today.conflict.Mac.19700101-000003.md"]).toBeUndefined();
+  });
+
+  test("does not sync generated conflict copies as normal files", async () => {
+    const baseHash = await hashText("base");
+    const remoteHash = await hashText("remote");
+    const vault = new FakeVault({ "notes/today.md": "local" });
+    const store = new FakeObjectStore();
+    const state: LocalSyncState = {
+      files: {
+        "notes/today.md": {
+          lastSyncedHash: baseHash,
+          remoteHash: baseHash,
+          deleted: false,
+          version: "ver_base",
+        },
+      },
+    };
+    await store.putText(blobObjectKey(remoteHash), "remote");
+    store.manifest.paths["notes/today.md"] = {
+      contentHash: remoteHash,
+      size: 6,
+      updatedAt: 2000,
+      updatedBy: "dev_other",
+      revision: 2,
+      version: "ver_remote",
+    };
+
+    await sync(vault, store, state, 3000);
+    await sync(vault, store, state, 4000);
+
+    expect(store.manifest.paths["notes/today.md"]?.contentHash).toBe(await hashText("local"));
+    expect(store.manifest.paths["notes/today.conflict.Mac.19700101-000003.md"]).toBeUndefined();
+  });
+
+  test("does not download existing remote conflict copies", async () => {
+    const conflictHash = await hashText("remote conflict");
+    const vault = new FakeVault({});
+    const store = new FakeObjectStore();
+    const state: LocalSyncState = { files: {} };
+    await store.putText(blobObjectKey(conflictHash), "remote conflict");
+    store.manifest.paths["notes/today.conflict.Phone.19700101-000002.md"] = {
+      contentHash: conflictHash,
+      size: 15,
+      updatedAt: 2000,
+      updatedBy: "dev_other",
+      revision: 2,
+      version: "ver_conflict",
+    };
+
+    const result = await sync(vault, store, state, 3000);
+
+    expect(result.downloaded).toBe(0);
+    expect(await vault.readText("notes/today.conflict.Phone.19700101-000002.md")).toBe("");
   });
 
   test("does not create a conflict when local and remote content match", async () => {
